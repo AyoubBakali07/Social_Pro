@@ -102,7 +102,11 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="route('dashboard')" class="flex items-center gap-x-2">
+                <Link :href="route(
+  $page.props.auth.user.role === 'admin' ? 'admin.dashboard' :
+  $page.props.auth.user.role === 'client' ? 'client.dashboard' :
+  'agency.dashboard'
+)" class="flex items-center gap-x-2">
                     <AppLogo />
                 </Link>
 

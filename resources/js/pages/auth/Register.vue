@@ -13,6 +13,12 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    role: '', // Default role
+});
+
+import { watch } from 'vue';
+watch(() => form.role, (newRole) => {
+    console.log('Role selected:', newRole);
 });
 
 const submit = () => {
@@ -25,6 +31,7 @@ const submit = () => {
 <template>
     <AuthBase title="Create an account" description="Enter your details below to create your account">
         <Head title="Register" />
+
 
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
@@ -66,6 +73,17 @@ const submit = () => {
                         placeholder="Confirm password"
                     />
                     <InputError :message="form.errors.password_confirmation" />
+                </div>
+
+                <!-- Role selection -->
+                <div class="grid gap-2">
+                    <Label for="role">Sign Up As</Label>
+                    <select id="role" v-model="form.role" required class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <option value="agency">Agency</option>
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <InputError :message="form.errors.role" />
                 </div>
 
                 <Button type="submit" class="mt-2 w-full" tabindex="5" :disabled="form.processing">

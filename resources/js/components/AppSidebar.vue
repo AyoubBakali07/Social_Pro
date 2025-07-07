@@ -4,22 +4,45 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Clients',
-        href: '/clients',
-        icon: Folder,
-    },
-];
+const page = usePage();
+const userRole = page.props.auth.user.role;
+
+let mainNavItems: NavItem[] = [];
+
+if (userRole === 'agency') {
+    mainNavItems = [
+        {
+            title: 'Dashboard',
+            href: '/agency/dashboard',
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Clients',
+            href: '/agency/client',
+            icon: Folder,
+        },
+    ];
+} else if (userRole === 'client') {
+    mainNavItems = [
+        {
+            title: 'Dashboard',
+            href: '/client/dashboard',
+            icon: LayoutGrid,
+        },
+    ];
+} else if (userRole === 'admin') {
+    mainNavItems = [
+        {
+            title: 'Dashboard',
+            href: '/admin/dashboard',
+            icon: LayoutGrid,
+        },
+    ];
+}
 
 const footerNavItems: NavItem[] = [
     {
@@ -41,7 +64,11 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')">
+                        <Link :href="route(
+  $page.props.auth.user.role === 'admin' ? 'admin.dashboard' :
+  $page.props.auth.user.role === 'client' ? 'client.dashboard' :
+  'agency.dashboard'
+)">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
