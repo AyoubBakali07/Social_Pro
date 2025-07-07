@@ -41,6 +41,11 @@ if (userRole === 'agency') {
             href: '/admin/dashboard',
             icon: LayoutGrid,
         },
+        {
+            title: 'Agencies',
+            href: '/admin/agencies',
+            icon: Folder,
+        },
     ];
 }
 

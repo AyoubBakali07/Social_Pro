@@ -23,5 +23,9 @@ Route::get('/client/dashboard', function () {
     return Inertia::render('Client/Dashboard');
 })->middleware(['auth', 'verified'])->name('client.dashboard');
 
+Route::get('/admin/agencies', function () {
+    return Inertia::render('Admin/Agencies');
+})->middleware(['auth', 'verified'])->name('admin.agencies');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
