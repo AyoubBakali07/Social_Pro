@@ -288,56 +288,56 @@ const calendarOptions = reactive({
                     <h2 class="text-2xl font-semibold mb-2">Agency Dashboard</h2>
                     <p class="text-sm text-muted-foreground">Manage your clients and social media campaigns</p>
                 </div>
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-4 w-full max-w-6xl mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
   <!-- Card: Total Clients -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#1abc9c]/20 mr-4">
-      <svg class="w-7 h-7 text-[#1abc9c]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m6 5.87v-2a4 4 0 0 0-3-3.87m0 0A4 4 0 1 1 17 8a4 4 0 0 1-4 4z"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100">
+      <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">12</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Total Clients</div>
+      <div class="text-gray-500 text-sm">Total Clients</div>
+      <div class="text-2xl font-bold text-gray-900">12</div>
     </div>
   </div>
   <!-- Card: Scheduled Posts -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#2563eb]/20 mr-4">
-      <svg class="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100">
+      <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">24</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Scheduled Posts</div>
+      <div class="text-gray-500 text-sm">Scheduled Posts</div>
+      <div class="text-2xl font-bold text-gray-900">24</div>
     </div>
   </div>
   <!-- Card: Pending Approvals -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#d97706]/20 mr-4">
-      <svg class="w-7 h-7 text-[#d97706]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-yellow-100">
+      <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">8</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Pending Approvals</div>
+      <div class="text-gray-500 text-sm">Pending Approvals</div>
+      <div class="text-2xl font-bold text-gray-900">8</div>
     </div>
   </div>
   <!-- Card: Published Today -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#22c55e]/20 mr-4">
-      <svg class="w-7 h-7 text-[#22c55e]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2l4-4"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-red-100">
+      <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">5</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Published Today</div>
+      <div class="text-gray-500 text-sm">Published Today</div>
+      <div class="text-2xl font-bold text-gray-900">5</div>
     </div>
   </div>
 </div>
             </div>
-            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold">Content Calendar</h2>
-                    <div class="flex items-center gap-2">
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" @click="openScheduleModal">+ Schedule Post</button>
-                    </div>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-semibold">Content Calendar</h2>
+                <div class="flex items-center gap-2">
+                    <button class="bg-[var(--color-primary)] hover:bg-[color-mix(in srgb, var(--color-primary) 80%, black)] text-[var(--color-primary-foreground)] px-4 py-2 rounded transition-colors" @click="openScheduleModal">+ Schedule Post</button>
                 </div>
+            </div>
+            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-gray-200 p-4 bg-white">
                 <!-- Add ref to FullCalendar -->
                 <FullCalendar ref="calendarRef" :options="calendarOptions" :events="events" />
             </div>
@@ -356,7 +356,7 @@ const calendarOptions = reactive({
         <form @submit.prevent="submitSchedule" class="flex flex-col gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Platform</label>
-            <select v-model="form.platform" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.platform" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="p in platforms" :key="p" :value="p">
                 {{ p }}
               </option>
@@ -364,7 +364,7 @@ const calendarOptions = reactive({
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Type</label>
-            <select v-model="form.postType" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.postType" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="type in availablePostTypes" :key="type" :value="type">
                 {{ postTypeIcons[type as keyof typeof postTypeIcons] }} {{ type }}
               </option>
@@ -372,21 +372,21 @@ const calendarOptions = reactive({
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Content</label>
-            <textarea v-model="form.content" class="w-full rounded border p-2 bg-gray-800 text-white" rows="3" placeholder="Write your post content..."></textarea>
+            <textarea v-model="form.content" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" rows="3" placeholder="Write your post content..."></textarea>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Media Upload</label>
-            <input type="file" accept="image/*,video/*" @change="handleFileUpload" class="w-full rounded border p-2 bg-gray-800 text-white" />
+            <input type="file" accept="image/*,video/*" @change="handleFileUpload" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
             <div v-if="form.media" class="text-xs mt-1 text-green-400">{{ form.media.name }}</div>
             <div class="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Schedule Date & Time</label>
-            <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-gray-800 text-white" />
+            <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Client</label>
-            <select v-model="form.client" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.client" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="c in clients" :key="c" :value="c">{{ c }}</option>
             </select>
           </div>
