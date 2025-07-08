@@ -249,8 +249,16 @@ const calendarOptions = reactive({
       shortName = platformConfig[platform].shortName;
     }
     const label = shortName && postType ? `${shortName} ${postType}` : (postType || arg.event.title);
+    // Add X icon for delete on hover
     return {
-      html: `<span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${bg} ${text} ${border} border gap-1 fc-custom-event" style="width: 100%; display: flex;">${icon}<span style="text-transform: capitalize; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${label}</span></span>`
+      html: `
+        <span class="relative group inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${bg} ${text} ${border} border gap-1 fc-custom-event" style="width: 100%; display: flex;">
+          ${icon}<span style="text-transform: capitalize; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${label}</span>
+          <span class='absolute top-0 right-0 mt-[-6px] mr-[-6px] hidden group-hover:inline-block cursor-pointer z-10 bg-white rounded-full border border-gray-300 p-0.5 shadow-sm transition hover:bg-red-100' title='Delete'>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
+          </span>
+        </span>
+      `
     };
   },
   eventDrop: function(info: EventDropArg) {
@@ -321,8 +329,10 @@ const calendarOptions = reactive({
   </div>
   <!-- Card: Published Today -->
   <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-red-100">
-      <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-50">
+      <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
     </div>
     <div>
       <div class="text-gray-500 text-sm">Published Today</div>
@@ -333,13 +343,25 @@ const calendarOptions = reactive({
             </div>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-2xl font-semibold">Content Calendar</h2>
-                <div class="flex items-center gap-2">
-                    <button class="bg-[var(--color-primary)] hover:bg-[color-mix(in srgb, var(--color-primary) 80%, black)] text-[var(--color-primary-foreground)] px-4 py-2 rounded transition-colors" @click="openScheduleModal">+ Schedule Post</button>
+                <div class="flex items-center gap-3">
+                    <button 
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50"
+                        @click="openScheduleModal"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Schedule Post
+                    </button>
                 </div>
             </div>
             <div class="relative min-h-[100vh] flex-1 rounded-xl border border-gray-200 p-4 bg-white">
                 <!-- Add ref to FullCalendar -->
-                <FullCalendar ref="calendarRef" :options="calendarOptions" :events="events" />
+                <FullCalendar 
+                  ref="calendarRef" 
+                  :options="calendarOptions" 
+                  :events="events"
+                />
             </div>
         </div>
     </AppLayout>
@@ -390,11 +412,71 @@ const calendarOptions = reactive({
               <option v-for="c in clients" :key="c" :value="c">{{ c }}</option>
             </select>
           </div>
-          <DialogFooter>
-            <button type="button" class="px-4 py-2 rounded bg-gray-600 text-white mr-2" @click="closeScheduleModal">Cancel</button>
-            <button type="submit" class="px-4 py-2 rounded bg-green-500 hover:bg-green-600 text-white">Schedule Post</button>
+          <DialogFooter class="mt-4 flex justify-end gap-3">
+            <button 
+              type="button" 
+              class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              @click="closeScheduleModal"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Schedule Post
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
 </template>
+
+<style>
+/* FullCalendar button style overrides for modern, accessible UI */
+.fc .fc-button, .fc .fc-button-primary {
+  background-color: #fff !important;
+  color: #2563eb !important; /* blue-600 */
+  border: 1px solid #2563eb !important; /* blue-600 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+  font-weight: 500;
+  font-size: 1rem;
+  min-width: 44px;
+  min-height: 38px;
+  padding: 0.5rem 1.25rem;
+  box-shadow: none;
+  transition: background 0.18s, color 0.18s, border 0.18s, box-shadow 0.18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  outline: none;
+}
+.fc .fc-button:hover, .fc .fc-button-primary:hover {
+  background-color: #eff6ff !important; /* blue-50 */
+  color: #1d4ed8 !important; /* blue-700 */
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+.fc .fc-button:focus, .fc .fc-button-primary:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px #bfdbfe !important; /* blue-200 */
+}
+.fc .fc-button-active, .fc .fc-button-primary.fc-button-active {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+.fc .fc-button-group {
+  gap: 0.5rem;
+}
+.fc .fc-button .fc-icon {
+  font-size: 1.2em;
+  vertical-align: middle;
+}
+.fc-custom-event.group:hover .group-hover\:inline-block {
+  display: inline-block !important;
+}
+</style>

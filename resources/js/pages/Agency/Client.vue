@@ -3,6 +3,13 @@ import { ref, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
+import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 
 const search = ref('')
 const clients = ref([
@@ -47,6 +54,54 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/clients',
   },
 ]
+
+const showAddClientModal = ref(false)
+const addClientForm = ref({
+  name: '',
+  email: '',
+  company: '',
+  message: ''
+})
+const addClientErrors = ref({
+  name: '',
+  email: '',
+  company: ''
+})
+
+function openAddClientModal() {
+  showAddClientModal.value = true
+}
+
+function closeAddClientModal() {
+  showAddClientModal.value = false
+  addClientForm.value = { name: '', email: '', company: '', message: '' }
+  addClientErrors.value = { name: '', email: '', company: '' }
+}
+
+function validateAddClientForm() {
+  let valid = true
+  addClientErrors.value = { name: '', email: '', company: '' }
+  if (!addClientForm.value.name) {
+    addClientErrors.value.name = 'Client name is required.'
+    valid = false
+  }
+  if (!addClientForm.value.email) {
+    addClientErrors.value.email = 'Email address is required.'
+    valid = false
+  }
+  if (!addClientForm.value.company) {
+    addClientErrors.value.company = 'Company name is required.'
+    valid = false
+  }
+  return valid
+}
+
+function submitAddClient() {
+  if (validateAddClientForm()) {
+    // No backend logic yet, just close modal
+    closeAddClientModal()
+  }
+}
 </script>
 
 <template>
@@ -105,7 +160,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     <div class="relative min-h-[60vh] flex-1 rounded-lg border border-gray-200 p-4 bg-white">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-2xl font-semibold">Client Directory</h2>
-          <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
+          <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="openAddClientModal">
             <span class="text-xl">+</span> Add Client
           </button>
         </div>
@@ -164,4 +219,38 @@ const breadcrumbs: BreadcrumbItem[] = [
       </div>
     </div>
   </AppLayout>
+  <Dialog v-model:open="showAddClientModal">
+    <DialogContent class="max-w-lg w-full">
+      <DialogHeader>
+        <DialogTitle>Invite New Client</DialogTitle>
+        <DialogDescription>Fill in the details to invite a new client to your agency.</DialogDescription>
+        <DialogClose />
+      </DialogHeader>
+      <form @submit.prevent="submitAddClient" class="flex flex-col gap-4 mt-2">
+        <div>
+          <label class="block text-sm font-medium mb-1">Client Name <span class="text-red-500">*</span></label>
+          <input v-model="addClientForm.name" type="text" placeholder="Enter client's full name" class="w-full rounded border p-2 bg-white text-black" :class="addClientErrors.name ? 'border-red-400' : 'border-gray-200'" required />
+          <div v-if="addClientErrors.name" class="text-xs text-red-500 mt-1">{{ addClientErrors.name }}</div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Email Address <span class="text-red-500">*</span></label>
+          <input v-model="addClientForm.email" type="email" placeholder="client@company.com" class="w-full rounded border p-2 bg-white text-black" :class="addClientErrors.email ? 'border-red-400' : 'border-gray-200'" required />
+          <div v-if="addClientErrors.email" class="text-xs text-red-500 mt-1">{{ addClientErrors.email }}</div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Company Name <span class="text-red-500">*</span></label>
+          <input v-model="addClientForm.company" type="text" placeholder="Company or Organization" class="w-full rounded border p-2 bg-white text-black" :class="addClientErrors.company ? 'border-red-400' : 'border-gray-200'" required />
+          <div v-if="addClientErrors.company" class="text-xs text-red-500 mt-1">{{ addClientErrors.company }}</div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Personal Message (Optional)</label>
+          <textarea v-model="addClientForm.message" class="w-full rounded border p-2 bg-white text-black" rows="3" placeholder="Add a personal message to your invitation..."></textarea>
+        </div>
+        <DialogFooter class="mt-4 flex justify-end gap-3">
+          <button type="button" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" @click="closeAddClientModal">Cancel</button>
+          <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">Send Invitation</button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>
