@@ -249,8 +249,16 @@ const calendarOptions = reactive({
       shortName = platformConfig[platform].shortName;
     }
     const label = shortName && postType ? `${shortName} ${postType}` : (postType || arg.event.title);
+    // Add X icon for delete on hover
     return {
-      html: `<span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${bg} ${text} ${border} border gap-1 fc-custom-event" style="width: 100%; display: flex;">${icon}<span style="text-transform: capitalize; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${label}</span></span>`
+      html: `
+        <span class="relative group inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${bg} ${text} ${border} border gap-1 fc-custom-event" style="width: 100%; display: flex;">
+          ${icon}<span style="text-transform: capitalize; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${label}</span>
+          <span class='absolute top-0 right-0 mt-[-6px] mr-[-6px] hidden group-hover:inline-block cursor-pointer z-10 bg-white rounded-full border border-gray-300 p-0.5 shadow-sm transition hover:bg-red-100' title='Delete'>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
+          </span>
+        </span>
+      `
     };
   },
   eventDrop: function(info: EventDropArg) {
@@ -288,58 +296,72 @@ const calendarOptions = reactive({
                     <h2 class="text-2xl font-semibold mb-2">Agency Dashboard</h2>
                     <p class="text-sm text-muted-foreground">Manage your clients and social media campaigns</p>
                 </div>
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-4 w-full max-w-6xl mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
   <!-- Card: Total Clients -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#1abc9c]/20 mr-4">
-      <svg class="w-7 h-7 text-[#1abc9c]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m6 5.87v-2a4 4 0 0 0-3-3.87m0 0A4 4 0 1 1 17 8a4 4 0 0 1-4 4z"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100">
+      <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">12</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Total Clients</div>
+      <div class="text-gray-500 text-sm">Total Clients</div>
+      <div class="text-2xl font-bold text-gray-900">12</div>
     </div>
   </div>
   <!-- Card: Scheduled Posts -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#2563eb]/20 mr-4">
-      <svg class="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100">
+      <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">24</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Scheduled Posts</div>
+      <div class="text-gray-500 text-sm">Scheduled Posts</div>
+      <div class="text-2xl font-bold text-gray-900">24</div>
     </div>
   </div>
   <!-- Card: Pending Approvals -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#d97706]/20 mr-4">
-      <svg class="w-7 h-7 text-[#d97706]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-yellow-100">
+      <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">8</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Pending Approvals</div>
+      <div class="text-gray-500 text-sm">Pending Approvals</div>
+      <div class="text-2xl font-bold text-gray-900">8</div>
     </div>
   </div>
   <!-- Card: Published Today -->
-  <div class="flex items-center bg-[#181F2A] rounded-2xl p-4 shadow-lg min-h-[90px]">
-    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#22c55e]/20 mr-4">
-      <svg class="w-7 h-7 text-[#22c55e]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2l4-4"/></svg>
+  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-50">
+      <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
     </div>
     <div>
-      <div class="text-2xl font-bold text-white">5</div>
-      <div class="text-sm text-gray-400 font-medium mt-1">Published Today</div>
+      <div class="text-gray-500 text-sm">Published Today</div>
+      <div class="text-2xl font-bold text-gray-900">5</div>
     </div>
   </div>
 </div>
             </div>
-            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold">Content Calendar</h2>
-                    <div class="flex items-center gap-2">
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" @click="openScheduleModal">+ Schedule Post</button>
-                    </div>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-semibold">Content Calendar</h2>
+                <div class="flex items-center gap-3">
+                    <button 
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50"
+                        @click="openScheduleModal"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Schedule Post
+                    </button>
                 </div>
+            </div>
+            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-gray-200 p-4 bg-white">
                 <!-- Add ref to FullCalendar -->
-                <FullCalendar ref="calendarRef" :options="calendarOptions" :events="events" />
+                <FullCalendar 
+                  ref="calendarRef" 
+                  :options="calendarOptions" 
+                  :events="events"
+                />
             </div>
         </div>
     </AppLayout>
@@ -356,7 +378,7 @@ const calendarOptions = reactive({
         <form @submit.prevent="submitSchedule" class="flex flex-col gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Platform</label>
-            <select v-model="form.platform" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.platform" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="p in platforms" :key="p" :value="p">
                 {{ p }}
               </option>
@@ -364,7 +386,7 @@ const calendarOptions = reactive({
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Type</label>
-            <select v-model="form.postType" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.postType" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="type in availablePostTypes" :key="type" :value="type">
                 {{ postTypeIcons[type as keyof typeof postTypeIcons] }} {{ type }}
               </option>
@@ -372,29 +394,89 @@ const calendarOptions = reactive({
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Content</label>
-            <textarea v-model="form.content" class="w-full rounded border p-2 bg-gray-800 text-white" rows="3" placeholder="Write your post content..."></textarea>
+            <textarea v-model="form.content" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" rows="3" placeholder="Write your post content..."></textarea>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Media Upload</label>
-            <input type="file" accept="image/*,video/*" @change="handleFileUpload" class="w-full rounded border p-2 bg-gray-800 text-white" />
+            <input type="file" accept="image/*,video/*" @change="handleFileUpload" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
             <div v-if="form.media" class="text-xs mt-1 text-green-400">{{ form.media.name }}</div>
             <div class="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Schedule Date & Time</label>
-            <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-gray-800 text-white" />
+            <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Client</label>
-            <select v-model="form.client" class="w-full rounded border p-2 bg-gray-800 text-white">
+            <select v-model="form.client" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
               <option v-for="c in clients" :key="c" :value="c">{{ c }}</option>
             </select>
           </div>
-          <DialogFooter>
-            <button type="button" class="px-4 py-2 rounded bg-gray-600 text-white mr-2" @click="closeScheduleModal">Cancel</button>
-            <button type="submit" class="px-4 py-2 rounded bg-green-500 hover:bg-green-600 text-white">Schedule Post</button>
+          <DialogFooter class="mt-4 flex justify-end gap-3">
+            <button 
+              type="button" 
+              class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              @click="closeScheduleModal"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Schedule Post
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
 </template>
+
+<style>
+/* FullCalendar button style overrides for modern, accessible UI */
+.fc .fc-button, .fc .fc-button-primary {
+  background-color: #fff !important;
+  color: #2563eb !important; /* blue-600 */
+  border: 1px solid #2563eb !important; /* blue-600 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+  font-weight: 500;
+  font-size: 1rem;
+  min-width: 44px;
+  min-height: 38px;
+  padding: 0.5rem 1.25rem;
+  box-shadow: none;
+  transition: background 0.18s, color 0.18s, border 0.18s, box-shadow 0.18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  outline: none;
+}
+.fc .fc-button:hover, .fc .fc-button-primary:hover {
+  background-color: #eff6ff !important; /* blue-50 */
+  color: #1d4ed8 !important; /* blue-700 */
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+.fc .fc-button:focus, .fc .fc-button-primary:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px #bfdbfe !important; /* blue-200 */
+}
+.fc .fc-button-active, .fc .fc-button-primary.fc-button-active {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+.fc .fc-button-group {
+  gap: 0.5rem;
+}
+.fc .fc-button .fc-icon {
+  font-size: 1.2em;
+  vertical-align: middle;
+}
+.fc-custom-event.group:hover .group-hover\:inline-block {
+  display: inline-block !important;
+}
+</style>

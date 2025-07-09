@@ -84,10 +84,42 @@ const feedbackText = ref('')
         <h1 class="text-2xl font-bold mb-1">Client Dashboard</h1>
         <p class="text-gray-500 mb-6">Review and approve your social media content</p>
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-6">
-          <div v-for="stat in stats" :key="stat.label" class="bg-white w-full rounded-xl p-4 flex flex-col items-start justify-center min-h-[100px] border border-gray-200">
-            <span class="text-sm text-gray-500 mb-2">{{ stat.label }}</span>
-            <span :class="['text-3xl font-bold', stat.color]">{{ stat.value }}</span>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-6">
+          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100">
+              <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div>
+              <div class="text-gray-500 text-sm">Pending Approval</div>
+              <div class="text-2xl font-bold text-gray-900">3</div>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100">
+              <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <div class="text-gray-500 text-sm">Approved</div>
+              <div class="text-2xl font-bold text-gray-900">12</div>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-yellow-100">
+              <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <div class="text-gray-500 text-sm">In Review</div>
+              <div class="text-2xl font-bold text-gray-900">5</div>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
+            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-red-100">
+              <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
+            </div>
+            <div>
+              <div class="text-gray-500 text-sm">Rejected</div>
+              <div class="text-2xl font-bold text-gray-900">2</div>
+            </div>
           </div>
         </div>
       </div>
@@ -95,35 +127,54 @@ const feedbackText = ref('')
       <!-- (Remove this entire section) -->
 
       <!-- Content Awaiting Your Approval -->
-      <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-        <h2 class="text-xl font-semibold mb-4">Content Awaiting Your Approval</h2>
-        <div class="bg-white border border-gray-200 rounded-lg p-4">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-            </div>
-            <span class="font-semibold text-lg truncate">Check out our latest...</span>
-            <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">Post</span>
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold">Content Awaiting Your Approval</h2>
+          <div class="relative">
+            <input 
+              type="text" 
+              v-model="search" 
+              placeholder="Search content..." 
+              class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
-          <div class="text-gray-500 text-sm mb-1">Scheduled for 12/15/2024</div>
-          <div class="mb-4 text-gray-700">Check out our latest product launch!🚀 #newproduct #innovation</div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg font-semibold flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-              Approve
-            </button>
-            <button class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-semibold flex items-center gap-2" @click="feedbackType = 'reject'; showFeedback = true">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              Reject
-            </button>
-            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-semibold flex items-center gap-2" @click="feedbackType = 'comment'; showFeedback = true">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2m2-4h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
-              Add Comment
-            </button>
-            <button class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-2 rounded-lg font-semibold flex items-center gap-2 border border-blue-200" @click="showPreview = true">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3"/></svg>
-              Preview
-            </button>
+        </div>
+        
+        <div class="space-y-4">
+          <div v-for="(item, index) in 3" :key="index" class="bg-white border border-gray-200 rounded-xl p-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-semibold text-gray-900 truncate">Check out our latest product launch! 🚀</h3>
+                  <span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">Post</span>
+                </div>
+                <div class="text-sm text-gray-500 mb-3">Scheduled for Dec 15, 2024 at 10:00 AM</div>
+                <p class="text-gray-700 mb-4">Check out our latest product launch! 🚀 #newproduct #innovation</p>
+                
+                <div class="flex flex-wrap items-center gap-2">
+                  <button class="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-green-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Approve
+                  </button>
+                  <button class="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-red-100" @click="feedbackType = 'reject'; showFeedback = true">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Reject
+                  </button>
+                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="feedbackType = 'comment'; showFeedback = true">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Comment
+                  </button>
+                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="showPreview = true">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Preview
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -173,7 +224,7 @@ const feedbackText = ref('')
             />
             <div class="flex gap-2 justify-end">
               <button
-                class="bg-teal-400 hover:bg-teal-500 text-white px-5 py-2 rounded-lg font-semibold"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50"
                 @click="showFeedback = false"
               >
                 Submit Feedback
