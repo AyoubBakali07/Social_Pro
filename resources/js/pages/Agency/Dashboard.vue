@@ -21,11 +21,14 @@ const calendarRef = ref<InstanceType<typeof FullCalendar>>();
 
 // Modal state and form fields
 const showScheduleModal = ref(false);
+const showEventDetails = ref(false);
+const selectedEvent = ref<any>(null);
 
 const form = ref({
   platform: 'Facebook',
   content: '',
-  media: null as File | null,
+  media: [] as File[],
+  mediaPreviews: [] as { url: string, type: string, name: string }[],
   datetime: '',
   client: '',
   postType: 'Post',
@@ -49,7 +52,8 @@ function closeScheduleModal() {
   form.value = {
     platform: 'Facebook',
     content: '',
-    media: null,
+    media: [],
+    mediaPreviews: [],
     datetime: '',
     client: '',
     postType: 'Post',
@@ -58,8 +62,13 @@ function closeScheduleModal() {
 
 function handleFileUpload(e: Event) {
   const target = e.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    form.value.media = target.files[0];
+  if (target.files && target.files.length > 0) {
+    form.value.media = Array.from(target.files);
+    form.value.mediaPreviews = form.value.media.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+      name: file.name
+    }));
   }
 }
 
@@ -102,6 +111,11 @@ function getEventTitle(platform: string, postType: string): string {
   return ` ${postIcon || '📝'} ${config?.shortName || platform} ${postType}`;
 }
 
+function getTextPreview(text: string, maxLength = 40) {
+  if (!text) return '';
+  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
+}
+
 function submitSchedule() {
     console.log('Raw datetime from form:', form.value.datetime);
     let startValue = '';
@@ -119,12 +133,13 @@ function submitSchedule() {
         allDay: allDay,
         backgroundColor: getPlatformColor(form.value.platform),
         borderColor: getPlatformColor(form.value.platform),
-        // Add some additional properties for better identification
         extendedProps: {
             client: form.value.client,
             content: form.value.content,
             platform: form.value.platform,
-            postType: form.value.postType
+            postType: form.value.postType,
+            // Add media preview if available
+            mediaList: form.value.mediaPreviews
         }
     };
     
@@ -209,55 +224,67 @@ const calendarOptions = reactive({
     right: 'dayGridMonth,dayGridWeek,dayGridDay'
   },
   eventContent: function(arg: any) {
-    // Get type and platform from event
     const postType = arg.event.extendedProps?.postType?.toLowerCase() || '';
-    // Icon SVG and styles for each type
     let icon = '';
-    let bg = '';
-    let text = '';
-    let border = '';
+    let pillBg = '';
+    let pillText = '';
     if (postType === 'story') {
       icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="3" y="3" width="18" height="18" rx="5" stroke="#d97706"/><circle cx="12" cy="12" r="4" stroke="#d97706"/></svg>`;
-      bg = 'bg-yellow-100';
-      text = 'text-yellow-800';
-      border = 'border-yellow-200';
+      pillBg = 'bg-yellow-100';
+      pillText = 'text-yellow-800';
     } else if (postType === 'carousel') {
       icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="7" y="7" width="10" height="10" rx="2" stroke="#ef4444"/><rect x="3" y="3" width="10" height="10" rx="2" stroke="#ef4444"/></svg>`;
-      bg = 'bg-red-100';
-      text = 'text-red-800';
-      border = 'border-red-200';
+      pillBg = 'bg-red-100';
+      pillText = 'text-red-800';
     } else if (postType === 'reel') {
       icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="3" y="5" width="18" height="14" rx="3" stroke="#22c55e"/><polygon points="10,9 16,12 10,15" fill="#22c55e"/></svg>`;
-      bg = 'bg-green-100';
-      text = 'text-green-800';
-      border = 'border-green-200';
+      pillBg = 'bg-green-100';
+      pillText = 'text-green-800';
     } else if (postType === 'post') {
       icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#64748b"/><circle cx="12" cy="12" r="4" stroke="#64748b"/></svg>`;
-      bg = 'bg-gray-100';
-      text = 'text-gray-800';
-      border = 'border-gray-200';
+      pillBg = 'bg-gray-100';
+      pillText = 'text-gray-800';
     } else {
       icon = '';
-      bg = 'bg-gray-100';
-      text = 'text-gray-800';
-      border = 'border-gray-200';
+      pillBg = 'bg-gray-100';
+      pillText = 'text-gray-800';
     }
-    // Compose pill label as 'FB post', 'IG reel', etc.
     let shortName = '';
     const platform = arg.event.extendedProps?.platform || '';
     if (platform && platformConfig[platform]) {
       shortName = platformConfig[platform].shortName;
     }
-    const label = shortName && postType ? `${shortName} ${postType}` : (postType || arg.event.title);
-    // Add X icon for delete on hover
+    const label = shortName && postType ? `${shortName.toUpperCase()} ${postType.charAt(0).toUpperCase() + postType.slice(1)}` : (postType || arg.event.title);
+    // Media preview
+    const mediaList = arg.event.extendedProps?.mediaList || [];
+    let mediaHtml = '';
+    if (mediaList.length) {
+      const first = mediaList[0];
+      if (first.type.startsWith('image')) {
+        mediaHtml = `<div class='w-full aspect-square mb-1'><img src='${first.url}' class='w-full h-full object-cover rounded border' style='aspect-ratio:1/1;'/></div>`;
+      } else if (first.type.startsWith('video')) {
+        mediaHtml = `<div class='w-full aspect-square mb-1'><video src='${first.url}' class='w-full rounded border' style='aspect-ratio:1/1;' muted></video></div>`;
+      }
+    }
+    // Time preview
+    let timeHtml = '';
+    if (!arg.event.allDay && arg.event.start) {
+      const date = new Date(arg.event.start);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      timeHtml = `<span class='block text-xs font-bold text-gray-800 mb-1'>${hours}:${minutes}</span>`;
+    }
+    // Text preview (optional, can be added below media if needed)
+    // const contentPreview = getTextPreview(arg.event.extendedProps?.content || '');
     return {
       html: `
-        <span class="relative group inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${bg} ${text} ${border} border gap-1 fc-custom-event" style="width: 100%; display: flex;">
-          ${icon}<span style="text-transform: capitalize; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${label}</span>
-          <span class='absolute top-0 right-0 mt-[-6px] mr-[-6px] hidden group-hover:inline-block cursor-pointer z-10 bg-white rounded-full border border-gray-300 p-0.5 shadow-sm transition hover:bg-red-100' title='Delete'>
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
+        <div class="fc-event-card rounded-xl border border-gray-200 p-2 flex flex-col items-start w-full">
+          ${timeHtml}
+          <span class="inline-flex items-center gap-1 mb-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pillBg} ${pillText}">
+            ${icon}<span>${label}</span>
           </span>
-        </span>
+          ${mediaHtml}
+        </div>
       `
     };
   },
@@ -268,7 +295,8 @@ const calendarOptions = reactive({
   },
   // Add event click handler for debugging
   eventClick: function(info: any) {
-    console.log('Event clicked:', info.event);
+    selectedEvent.value = info.event;
+    showEventDetails.value = true;
   },
   // Force events to use their individual colors
   eventDidMount: function(info: any) {
@@ -278,6 +306,19 @@ const calendarOptions = reactive({
     }
   }
 })
+
+function getShortFileName(name: string, maxBase = 10) {
+  const dotIdx = name.lastIndexOf('.');
+  if (dotIdx === -1) return name.length > maxBase ? name.slice(0, maxBase) + '…' : name;
+  const base = name.slice(0, dotIdx);
+  const ext = name.slice(dotIdx);
+  return base.length > maxBase ? base.slice(0, maxBase) + '…' + ext : name;
+}
+
+const mediaCarouselIndex = ref(0);
+watch(showEventDetails, (open) => {
+  if (open) mediaCarouselIndex.value = 0;
+});
 </script>
 
 <template>
@@ -398,8 +439,14 @@ const calendarOptions = reactive({
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Media Upload</label>
-            <input type="file" accept="image/*,video/*" @change="handleFileUpload" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
-            <div v-if="form.media" class="text-xs mt-1 text-green-400">{{ form.media.name }}</div>
+            <input type="file" accept="image/*,video/*" multiple @change="handleFileUpload" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            <div v-if="form.mediaPreviews.length" class="flex flex-row gap-4 mt-2">
+              <div v-for="(preview, idx) in form.mediaPreviews" :key="preview.url" class="flex flex-col items-center w-24">
+                <img v-if="preview.type.startsWith('image')" :src="preview.url" class="w-20 h-20 object-cover rounded border mb-1" />
+                <video v-else controls :src="preview.url" class="w-20 h-20 object-cover rounded border mb-1" />
+                <div class="text-xs text-green-600 break-all text-center">{{ getShortFileName(preview.name, 8) }}</div>
+              </div>
+            </div>
             <div class="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</div>
           </div>
           <div>
@@ -431,6 +478,44 @@ const calendarOptions = reactive({
             </button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+    <!-- Event Details Modal -->
+    <Dialog v-model:open="showEventDetails">
+      <DialogContent class="max-w-lg w-full p-0 bg-white rounded-2xl ">
+        <div class="p-8 max-h-[90vh] overflow-y-auto w-full flex flex-col ">
+          <div class="text-2xl font-bold mb-6">Post Details</div>
+          <div v-if="selectedEvent?.extendedProps.mediaList && selectedEvent.extendedProps.mediaList.length" class="w-full flex flex-col items-center mb-6">
+            <div class="relative w-full max-w-md aspect-square flex items-center justify-center">
+              <template v-for="(media, idx) in selectedEvent.extendedProps.mediaList">
+                <img v-if="media.type.startsWith('image') && idx === mediaCarouselIndex" :src="media.url" :key="media.url" class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
+                <video v-else-if="media.type.startsWith('video') && idx === mediaCarouselIndex" :src="media.url" :key="media.url" controls class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
+              </template>
+              <button v-if="selectedEvent.extendedProps.mediaList.length > 1 && mediaCarouselIndex > 0" @click="mediaCarouselIndex--" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full shadow p-1 z-10">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button v-if="selectedEvent.extendedProps.mediaList.length > 1 && mediaCarouselIndex < selectedEvent.extendedProps.mediaList.length - 1" @click="mediaCarouselIndex++" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full shadow p-1 z-10">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              </button>
+              <div v-if="selectedEvent.extendedProps.mediaList.length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                <span v-for="(media, idx) in selectedEvent.extendedProps.mediaList" :key="media.url + idx" class="w-2 h-2 rounded-full" :class="mediaCarouselIndex === idx ? 'bg-blue-500' : 'bg-gray-300'" />
+              </div>
+            </div>
+          </div>
+          <div class="mb-2">
+            <strong>Content:</strong>
+            <div class="whitespace-pre-line">{{ selectedEvent.extendedProps.content }}</div>
+          </div>
+          <div class="text-sm text-gray-500">
+            <div><strong>Platform:</strong> {{ selectedEvent.extendedProps.platform }}</div>
+            <div><strong>Type:</strong> {{ selectedEvent.extendedProps.postType }}</div>
+            <div><strong>Client:</strong> {{ selectedEvent.extendedProps.client }}</div>
+            <div><strong>Scheduled:</strong> {{ selectedEvent.startStr }}</div>
+          </div>
+        </div>
+        <DialogFooter class="mt-4 flex justify-end p-4">
+          <button @click="showEventDetails = false" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Close</button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 </template>
