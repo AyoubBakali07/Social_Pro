@@ -16,6 +16,34 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 
+// Platform Icons
+import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next';
+
+// Map platform names to Vue icon components (for modal pill)
+const platformIconComponents = {
+  Facebook,
+  Instagram,
+  Twitter,
+  LinkedIn: Linkedin,
+};
+
+// Map platform names to SVG strings (for FullCalendar event cards)
+const platformIconSvgs = {
+  Facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-600" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3.28l.72-4H14V7a1 1 0 0 1 1-1h3z"/></svg>`,
+  
+  Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-pink-600" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
+  Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-sky-500" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.5 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03A12.94 12.94 0 0 1 3 1.13a4.48 4.48 0 0 0-.61 2.27c0 1.56.8 2.94 2.02 3.75A4.48 4.48 0 0 1 2 6.13v.06c0 2.18 1.55 4 3.8 4.42a4.52 4.52 0 0 1-2.04.08c.57 1.78 2.23 3.08 4.2 3.12A9.05 9.05 0 0 1 1 19.54a12.8 12.8 0 0 0 6.95 2.04c8.36 0 12.94-6.93 12.94-12.94 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 23 3z"/></svg>`,
+  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="16" y2="16"/><line x1="8" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+};
+
+// Platform pill color classes
+const platformPillColors = {
+  Facebook: 'bg-blue-100 text-blue-600',
+  Instagram: 'bg-pink-100 text-pink-600',
+  Twitter: 'bg-gray-100 text-gray-800',
+  LinkedIn: 'bg-blue-50 text-blue-800',
+};
+
 // Add template ref for FullCalendar
 const calendarRef = ref<InstanceType<typeof FullCalendar>>();
 
@@ -158,6 +186,11 @@ function submitSchedule() {
     closeScheduleModal();
 }
 
+function handleDeleteEvent(eventId: string) {
+  // For now, just log. Integrate with backend later.
+  console.log('Delete event with id:', eventId);
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -250,11 +283,15 @@ const calendarOptions = reactive({
       pillText = 'text-gray-800';
     }
     let shortName = '';
-    const platform = arg.event.extendedProps?.platform || '';
-    if (platform && platformConfig[platform]) {
-      shortName = platformConfig[platform].shortName;
+    const eventPlatform = arg.event.extendedProps?.platform || '';
+    if (eventPlatform && platformConfig[eventPlatform as keyof typeof platformConfig]) {
+      shortName = platformConfig[eventPlatform as keyof typeof platformConfig].shortName;
     }
-    const label = shortName && postType ? `${shortName.toUpperCase()} ${postType.charAt(0).toUpperCase() + postType.slice(1)}` : (postType || arg.event.title);
+    let label = shortName && postType ? `${shortName.toUpperCase()} ${postType.charAt(0).toUpperCase() + postType.slice(1)}` : (postType || arg.event.title);
+    const client = arg.event.extendedProps?.client;
+    if (client) {
+      label += ` - ${client.slice(0, 5) +'...'}`;
+    }
     // Media preview
     const mediaList = arg.event.extendedProps?.mediaList || [];
     let mediaHtml = '';
@@ -274,14 +311,20 @@ const calendarOptions = reactive({
       const minutes = date.getMinutes().toString().padStart(2, '0');
       timeHtml = `<span class='block text-xs font-bold text-gray-800 mb-1'>${hours}:${minutes}</span>`;
     }
-    // Text preview (optional, can be added below media if needed)
-    // const contentPreview = getTextPreview(arg.event.extendedProps?.content || '');
+    // Add X icon for delete (absolute, only on hover)
+    const xIcon = `<span class='absolute top-2 right-2 z-20 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow cursor-pointer delete-x' title='Delete'>
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
+    </span>`;
+    const platformIconSvg = eventPlatform && platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] ? platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] : '';
+    const pillColor = eventPlatform && platformPillColors[eventPlatform as keyof typeof platformPillColors] ? platformPillColors[eventPlatform as keyof typeof platformPillColors] : 'bg-gray-100 text-gray-800';
     return {
       html: `
-        <div class="fc-event-card rounded-xl border border-gray-200 p-2 flex flex-col items-start w-full">
+        <div class="fc-event-card relative rounded-xl border border-gray-200 p-2 flex flex-col items-start w-full group cursor-pointer">
+          ${xIcon}
           ${timeHtml}
-          <span class="inline-flex items-center gap-1 mb-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pillBg} ${pillText}">
-            ${icon}<span>${label}</span>
+          <span class="inline-flex items-center gap-1 mb-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pillColor}">
+            ${platformIconSvg}
+            <span>${label}</span>
           </span>
           ${mediaHtml}
         </div>
@@ -304,6 +347,14 @@ const calendarOptions = reactive({
       info.el.style.backgroundColor = info.event.backgroundColor;
       info.el.style.borderColor = info.event.borderColor || info.event.backgroundColor;
     }
+    // Add delete X icon click handler
+    const x = info.el.querySelector('.delete-x');
+    if (x) {
+      x.addEventListener('click', (e: Event) => {
+        e.stopPropagation();
+        handleDeleteEvent(info.event.id);
+      });
+    }
   }
 })
 
@@ -318,6 +369,32 @@ function getShortFileName(name: string, maxBase = 10) {
 const mediaCarouselIndex = ref(0);
 watch(showEventDetails, (open) => {
   if (open) mediaCarouselIndex.value = 0;
+});
+
+// Add these computed properties in <script setup lang="ts">
+
+
+const postDetailsPill = computed(() => {
+  if (!selectedEvent.value) return { icon: null, label: '', color: '' };
+  const modalPlatform = selectedEvent.value.extendedProps?.platform;
+  const postType = selectedEvent.value.extendedProps?.postType;
+    const shortName = modalPlatform && platformConfig[modalPlatform as keyof typeof platformConfig]?.shortName ? platformConfig[modalPlatform as keyof typeof platformConfig].shortName : '';
+  const icon = modalPlatform && platformIconComponents[modalPlatform as keyof typeof platformIconComponents] ? platformIconComponents[modalPlatform as keyof typeof platformIconComponents] : null;
+  const color = modalPlatform && platformPillColors[modalPlatform as keyof typeof platformPillColors] ? platformPillColors[modalPlatform as keyof typeof platformPillColors] : 'bg-gray-100 text-gray-800';
+  return {
+    icon,
+    label: `${shortName} ${postType || ''}`.trim(),
+    color
+  };
+});
+
+const formattedSchedule = computed(() => {
+  if (!selectedEvent.value?.start) return '';
+  const date = new Date(selectedEvent.value.start);
+  return date.toLocaleString(undefined, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  });
 });
 </script>
 
@@ -482,14 +559,24 @@ watch(showEventDetails, (open) => {
     </Dialog>
     <!-- Event Details Modal -->
     <Dialog v-model:open="showEventDetails">
-      <DialogContent class="max-w-lg w-full p-0 bg-white rounded-2xl ">
-        <div class="p-8 max-h-[90vh] overflow-y-auto w-full flex flex-col ">
-          <div class="text-2xl font-bold mb-6">Post Details</div>
-          <div v-if="selectedEvent?.extendedProps.mediaList && selectedEvent.extendedProps.mediaList.length" class="w-full flex flex-col items-center mb-6">
+      <DialogContent class="max-w-lg w-full p-0 bg-gray-50 rounded-2xl ">
+       
+        <div class="flex flex-col gap-4 p-6">
+          <!-- Header -->
+          <div class="flex flex-col gap-2 items-start">
+            <span :class="'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ' + postDetailsPill.color">
+              <!-- <span>{{ postDetailsPill.icon }}</span> -->
+               <component v-if="postDetailsPill.icon" :is="postDetailsPill.icon" class="w-4 h-4" />
+              <span>{{ postDetailsPill.label }}</span>
+            </span>
+            <span v-if="selectedEvent?.start" class="text-gray-500 text-sm">Scheduled for {{ formattedSchedule }}</span>
+          </div>
+          <!-- Media Card -->
+          <div v-if="selectedEvent?.extendedProps.mediaList && selectedEvent.extendedProps.mediaList.length" class="bg-white rounded-xl p-4 flex flex-col items-center">
             <div class="relative w-full max-w-md aspect-square flex items-center justify-center">
               <template v-for="(media, idx) in selectedEvent.extendedProps.mediaList">
-                <img v-if="media.type.startsWith('image') && idx === mediaCarouselIndex" :src="media.url" :key="media.url" class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
-                <video v-else-if="media.type.startsWith('video') && idx === mediaCarouselIndex" :src="media.url" :key="media.url" controls class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
+                <img v-if="media.type.startsWith('image') && idx === mediaCarouselIndex" :src="media.url" :key="media.url + '-img' + idx" class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
+                <video v-else-if="media.type.startsWith('video') && idx === mediaCarouselIndex" :src="media.url" :key="media.url + '-video' + idx" controls class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
               </template>
               <button v-if="selectedEvent.extendedProps.mediaList.length > 1 && mediaCarouselIndex > 0" @click="mediaCarouselIndex--" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full shadow p-1 z-10">
                 <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
@@ -502,20 +589,23 @@ watch(showEventDetails, (open) => {
               </div>
             </div>
           </div>
-          <div class="mb-2">
-            <strong>Content:</strong>
-            <div class="whitespace-pre-line">{{ selectedEvent.extendedProps.content }}</div>
+          <!-- Post Content Card -->
+          <div class="bg-white rounded-xl p-4 flex flex-col gap-2">
+            <div class="font-semibold">Post Content</div>
+            <div class="text-gray-700 whitespace-pre-line min-h-[1.5em]">{{ selectedEvent?.extendedProps.content || 'No content' }}</div>
           </div>
-          <div class="text-sm text-gray-500">
-            <div><strong>Platform:</strong> {{ selectedEvent.extendedProps.platform }}</div>
-            <div><strong>Type:</strong> {{ selectedEvent.extendedProps.postType }}</div>
-            <div><strong>Client:</strong> {{ selectedEvent.extendedProps.client }}</div>
-            <div><strong>Scheduled:</strong> {{ selectedEvent.startStr }}</div>
+          <!-- Details Card -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl p-4 flex flex-col gap-1">
+              <div class="font-semibold mb-1">Client</div>
+              <div class="text-gray-700 min-h-[1.5em]">{{ selectedEvent?.extendedProps.client || '—' }}</div>
+            </div>
+            <div class="bg-white rounded-xl p-4 flex flex-col gap-1">
+              <div class="font-semibold mb-1">Platform</div>
+              <div class="text-gray-700 min-h-[1.5em]">{{ selectedEvent?.extendedProps.platform || '—' }}</div>
+            </div>
           </div>
         </div>
-        <DialogFooter class="mt-4 flex justify-end p-4">
-          <button @click="showEventDetails = false" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Close</button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
 </template>
@@ -563,5 +653,11 @@ watch(showEventDetails, (open) => {
 }
 .fc-custom-event.group:hover .group-hover\:inline-block {
   display: inline-block !important;
+}
+.fc-event-card .delete-x {
+  display: none;
+}
+.fc-event-card.group:hover .delete-x {
+  display: flex !important;
 }
 </style>
