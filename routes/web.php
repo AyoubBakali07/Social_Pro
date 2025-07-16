@@ -23,6 +23,10 @@ Route::get('/client/dashboard', function () {
     return Inertia::render('Client/Dashboard');
 })->middleware(['auth', 'verified'])->name('client.dashboard');
 
+Route::get('/client/calendar', function () {
+    return Inertia::render('Client/Calendar');
+})->middleware(['auth', 'verified'])->name('client.calendar');
+
 Route::get('/admin/agencies', function () {
     return Inertia::render('Admin/Agencies');
 })->middleware(['auth', 'verified'])->name('admin.agencies');

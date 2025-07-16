@@ -33,6 +33,11 @@ if (userRole === 'agency') {
             href: '/client/dashboard',
             icon: LayoutGrid,
         },
+        {
+            title: 'Calendar',
+            href: '/client/calendar',
+            icon: BookOpen,
+        },
     ];
 } else if (userRole === 'admin') {
     mainNavItems = [
