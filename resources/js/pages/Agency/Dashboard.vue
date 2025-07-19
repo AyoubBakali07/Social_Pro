@@ -18,6 +18,8 @@ import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 
 // Platform Icons
 import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next';
+import StatCard from '@/components/ui/card/StatCard.vue'
+import ScheduledPostCard from '@/components/ui/ScheduledPostCard.vue'
 
 // Map platform names to Vue icon components (for modal pill)
 const platformIconComponents = {
@@ -396,6 +398,33 @@ const formattedSchedule = computed(() => {
     hour: '2-digit', minute: '2-digit', hour12: true
   });
 });
+
+const stats = [
+  {
+    label: 'Total Clients',
+    value: 12,
+    color: 'blue',
+    icon: `<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>`,
+  },
+  {
+    label: 'Scheduled Posts',
+    value: 24,
+    color: 'green',
+    icon: `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>`,
+  },
+  {
+    label: 'Pending Approvals',
+    value: 8,
+    color: 'yellow',
+    icon: `<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
+  },
+  {
+    label: 'Published Today',
+    value: 5,
+    color: 'green',
+    icon: `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+  },
+];
 </script>
 
 <template>
@@ -415,49 +444,15 @@ const formattedSchedule = computed(() => {
                     <p class="text-sm text-muted-foreground">Manage your clients and social media campaigns</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
-  <!-- Card: Total Clients -->
-  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100">
-      <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>
-    </div>
-    <div>
-      <div class="text-gray-500 text-sm">Total Clients</div>
-      <div class="text-2xl font-bold text-gray-900">12</div>
-    </div>
-  </div>
-  <!-- Card: Scheduled Posts -->
-  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100">
-      <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-    </div>
-    <div>
-      <div class="text-gray-500 text-sm">Scheduled Posts</div>
-      <div class="text-2xl font-bold text-gray-900">24</div>
-    </div>
-  </div>
-  <!-- Card: Pending Approvals -->
-  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-yellow-100">
-      <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    </div>
-    <div>
-      <div class="text-gray-500 text-sm">Pending Approvals</div>
-      <div class="text-2xl font-bold text-gray-900">8</div>
-    </div>
-  </div>
-  <!-- Card: Published Today -->
-  <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-50">
-      <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    </div>
-    <div>
-      <div class="text-gray-500 text-sm">Published Today</div>
-      <div class="text-2xl font-bold text-gray-900">5</div>
-    </div>
-  </div>
-</div>
+                  <StatCard
+                    v-for="stat in stats"
+                    :key="stat.label"
+                    :icon="stat.icon"
+                    :label="stat.label"
+                    :value="stat.value"
+                    :color="stat.color"
+                  />
+                </div>
             </div>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-2xl font-semibold">Content Calendar</h2>
@@ -557,54 +552,19 @@ const formattedSchedule = computed(() => {
         </form>
       </DialogContent>
     </Dialog>
+    
     <!-- Event Details Modal -->
     <Dialog v-model:open="showEventDetails">
-      <DialogContent class="max-w-lg w-full p-0 bg-gray-50 rounded-2xl ">
-       
+      <DialogContent class="max-w-lg w-full p-0 bg-gray-50 rounded-2xl max-h-[85vh] overflow-y-auto">
         <div class="flex flex-col gap-4 p-6">
-          <!-- Header -->
-          <div class="flex flex-col gap-2 items-start">
-            <span :class="'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ' + postDetailsPill.color">
-              <!-- <span>{{ postDetailsPill.icon }}</span> -->
-               <component v-if="postDetailsPill.icon" :is="postDetailsPill.icon" class="w-4 h-4" />
-              <span>{{ postDetailsPill.label }}</span>
-            </span>
-            <span v-if="selectedEvent?.start" class="text-gray-500 text-sm">Scheduled for {{ formattedSchedule }}</span>
-          </div>
-          <!-- Media Card -->
-          <div v-if="selectedEvent?.extendedProps.mediaList && selectedEvent.extendedProps.mediaList.length" class="bg-white rounded-xl p-4 flex flex-col items-center">
-            <div class="relative w-full max-w-md aspect-square flex items-center justify-center">
-              <template v-for="(media, idx) in selectedEvent.extendedProps.mediaList">
-                <img v-if="media.type.startsWith('image') && idx === mediaCarouselIndex" :src="media.url" :key="media.url + '-img' + idx" class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
-                <video v-else-if="media.type.startsWith('video') && idx === mediaCarouselIndex" :src="media.url" :key="media.url + '-video' + idx" controls class="w-full h-full object-cover rounded-xl absolute left-0 top-0" v-show="idx === mediaCarouselIndex" />
-              </template>
-              <button v-if="selectedEvent.extendedProps.mediaList.length > 1 && mediaCarouselIndex > 0" @click="mediaCarouselIndex--" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full shadow p-1 z-10">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
-              </button>
-              <button v-if="selectedEvent.extendedProps.mediaList.length > 1 && mediaCarouselIndex < selectedEvent.extendedProps.mediaList.length - 1" @click="mediaCarouselIndex++" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full shadow p-1 z-10">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-              </button>
-              <div v-if="selectedEvent.extendedProps.mediaList.length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                <span v-for="(media, idx) in selectedEvent.extendedProps.mediaList" :key="media.url + idx" class="w-2 h-2 rounded-full" :class="mediaCarouselIndex === idx ? 'bg-blue-500' : 'bg-gray-300'" />
-              </div>
-            </div>
-          </div>
-          <!-- Post Content Card -->
-          <div class="bg-white rounded-xl p-4 flex flex-col gap-2">
-            <div class="font-semibold">Post Content</div>
-            <div class="text-gray-700 whitespace-pre-line min-h-[1.5em]">{{ selectedEvent?.extendedProps.content || 'No content' }}</div>
-          </div>
-          <!-- Details Card -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white rounded-xl p-4 flex flex-col gap-1">
-              <div class="font-semibold mb-1">Client</div>
-              <div class="text-gray-700 min-h-[1.5em]">{{ selectedEvent?.extendedProps.client || '—' }}</div>
-            </div>
-            <div class="bg-white rounded-xl p-4 flex flex-col gap-1">
-              <div class="font-semibold mb-1">Platform</div>
-              <div class="text-gray-700 min-h-[1.5em]">{{ selectedEvent?.extendedProps.platform || '—' }}</div>
-            </div>
-          </div>
+          <ScheduledPostCard
+            :platform="selectedEvent?.extendedProps?.platform"
+            :postType="selectedEvent?.extendedProps?.postType"
+            :scheduledFor="selectedEvent?.start"
+            :media="selectedEvent?.extendedProps?.mediaList || []"
+            :content="selectedEvent?.extendedProps?.content"
+            :client="selectedEvent?.extendedProps?.client"
+          />
         </div>
       </DialogContent>
     </Dialog>
