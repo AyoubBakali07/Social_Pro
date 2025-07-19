@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog'
+import FullCalendar from '@fullcalendar/vue3';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import rrulePlugin from '@fullcalendar/rrule';
+import StatCard from '@/components/ui/card/StatCard.vue';
+import FeedbackModal from '@/components/ui/dialog/FeedbackModal.vue';
 
 const search = ref('')
 const clients = ref([
@@ -74,6 +80,27 @@ const showPreview = ref(false)
 const showFeedback = ref(false)
 const feedbackType = ref<'comment' | 'reject'>('comment')
 const feedbackText = ref('')
+
+const calendarEvents = ref([
+  {
+    title: 'Sample Event',
+    start: new Date().toISOString().slice(0, 10),
+    allDay: true,
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+]);
+
+const calendarOptions = reactive({
+  plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
+  initialView: 'dayGridMonth',
+  editable: false,
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,dayGridWeek,dayGridDay',
+  },
+});
 </script>
 
 <template>
@@ -85,42 +112,30 @@ const feedbackText = ref('')
         <p class="text-gray-500 mb-6">Review and approve your social media content</p>
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-6">
-          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100">
-              <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            </div>
-            <div>
-              <div class="text-gray-500 text-sm">Pending Approval</div>
-              <div class="text-2xl font-bold text-gray-900">3</div>
-            </div>
-          </div>
-          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100">
-              <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-              <div class="text-gray-500 text-sm">Approved</div>
-              <div class="text-2xl font-bold text-gray-900">12</div>
-            </div>
-          </div>
-          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-yellow-100">
-              <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-              <div class="text-gray-500 text-sm">In Review</div>
-              <div class="text-2xl font-bold text-gray-900">5</div>
-            </div>
-          </div>
-          <div class="bg-white border border-gray-200 rounded-xl px-6 py-5 flex items-center gap-4">
-            <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-red-100">
-              <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
-            </div>
-            <div>
-              <div class="text-gray-500 text-sm">Rejected</div>
-              <div class="text-2xl font-bold text-gray-900">2</div>
-            </div>
-          </div>
+          <StatCard
+            icon="<svg class='w-6 h-6 text-blue-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'/></svg>"
+            label="Pending Approval"
+            :value="3"
+            color="text-gray-500"
+          />
+          <StatCard
+            icon="<svg class='w-6 h-6 text-green-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>"
+            label="Approved"
+            :value="12"
+            color="text-green-600"
+          />
+          <StatCard
+            icon="<svg class='w-6 h-6 text-yellow-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>"
+            label="In Review"
+            :value="5"
+            color="text-yellow-600"
+          />
+          <StatCard
+            icon="<svg class='w-6 h-6 text-red-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><path d='M15 9l-6 6m0-6l6 6'/></svg>"
+            label="Rejected"
+            :value="2"
+            color="text-red-600"
+          />
         </div>
       </div>
       <!-- Pending Approvals -->
@@ -178,6 +193,15 @@ const feedbackText = ref('')
           </div>
         </div>
       </div>
+      <!-- End Content Awaiting Your Approval section -->
+
+      <!-- Upcoming Contents Calendar -->
+      <div class="mt-3">
+        <h2 class="text-2xl font-semibold mb-4">Upcoming Contents</h2>
+        <div class="w-full  bg-white border border-gray-200 rounded-xl p-4 shadow mx-auto">
+          <FullCalendar :options="calendarOptions" :events="calendarEvents" />
+        </div>
+      </div>
 
       <!-- Post Preview Modal -->
       <Dialog v-model:open="showPreview">
@@ -207,38 +231,13 @@ const feedbackText = ref('')
       </Dialog>
 
       <!-- Feedback Modal for Add Comment and Reject -->
-      <Dialog v-model:open="showFeedback">
-        <DialogContent class="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {{ feedbackType === 'comment' ? 'Add Comment' : 'Reject Post' }}
-            </DialogTitle>
-            <DialogClose />
-          </DialogHeader>
-          <div class="flex flex-col gap-4">
-            <textarea
-              v-model="feedbackText"
-              rows="4"
-              class="w-full border-2 border-teal-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="Enter your feedback..."
-            />
-            <div class="flex gap-2 justify-end">
-              <button
-                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50"
-                @click="showFeedback = false"
-              >
-                Submit Feedback
-              </button>
-              <button
-                class="bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-semibold"
-                @click="showFeedback = false"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FeedbackModal
+        v-model:open="showFeedback"
+        v-model:feedbackText="feedbackText"
+        :feedbackType="feedbackType"
+        @submit="showFeedback = false"
+        @cancel="showFeedback = false"
+      />
     </div>
   </AppLayout>
 </template>
