@@ -5,7 +5,7 @@ import { watch, ref, reactive, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { EventDropArg } from '@fullcalendar/core';
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -57,20 +57,109 @@ const showScheduleModal = ref(false);
 const showEventDetails = ref(false);
 const selectedEvent = ref<any>(null);
 
-const form = ref({
+const form = useForm({
   platform: 'Facebook',
   content: '',
   media: [] as File[],
-  mediaPreviews: [] as { url: string, type: string, name: string }[],
-  datetime: '',
-  client: '', // will hold client id
+  scheduleDate: '',
+  client_id: '',
   postType: 'Post',
+  status: 'scheduled',
+  feedback: ''
 });
-const platforms = ['Facebook', 'Instagram', 'Twitter', 'LinkedIn'];
+
+form.resetOnSuccess = false;
+form.onSuccess = () => {
+  closeScheduleModal();
+  form.reset();
+  router.reload({ only: ['posts'] });
+};
+form.onError = (errors: any) => {
+  console.error('Form submission error:', errors);
+};
+
+const validateForm = () => {
+  const errors: Record<string, string> = {};
+
+  if (!form.content || typeof form.content !== 'string' || !form.content.trim()) {
+    errors.content = 'Content is required';
+  }
+
+  if (!form.scheduleDate || typeof form.scheduleDate !== 'string') {
+    errors.scheduleDate = 'Schedule date is required';
+  } else if (new Date(form.scheduleDate) < new Date()) {
+    errors.scheduleDate = 'Schedule date must be in the future';
+  }
+
+  if (!form.client_id) {
+    errors.client_id = 'Please select a client';
+  }
+
+  form.clearErrors();
+
+  if (Object.keys(errors).length > 0) {
+    form.setError(errors);
+    return false;
+  }
+
+  return true;
+};
+
+const submitSchedule = async () => {
+  if (!validateForm()) {
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    Object.keys(form).forEach(key => {
+      if (key === 'media') {
+        if (Array.isArray(form.media) && form.media.length > 0) {
+          form.media.forEach((file, index) => {
+            formData.append(`media[${index}]`, file);
+          });
+        }
+      } else if (key === 'scheduleDate' && form.scheduleDate && typeof form.scheduleDate === 'string') {
+        formData.append(key, new Date(form.scheduleDate).toISOString());
+      } else if (form[key] !== null && form[key] !== undefined && typeof form[key] !== 'object') {
+        formData.append(key, String(form[key]));
+      }
+    });
+    if (!formData.get('status')) {
+      formData.append('status', 'scheduled');
+    }
+    if (!formData.get('postType')) {
+      formData.append('postType', 'Post');
+    }
+    await form.post('/agency/posts', {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        closeScheduleModal();
+        form.reset();
+        router.reload({ only: ['posts'] });
+      },
+      onError: (errors: any) => {
+        console.error('Error scheduling post:', errors);
+        if (errors && typeof errors === 'object') {
+          const errorMessages: Record<string, string> = {};
+          Object.entries(errors).forEach(([key, value]) => {
+            errorMessages[key] = Array.isArray(value) ? value[0] : value;
+          });
+          form.setError(errorMessages);
+        }
+      },
+    });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    form.setError({ form: 'An unexpected error occurred. Please try again.' });
+  }
+};
+const platforms = ['Facebook', 'Instagram', 'Twitter', 'TikTok', 'LinkedIn'];
 
 // Computed property for dynamic post types based on selected platform
 const availablePostTypes = computed(() => {
-  const config = platformConfig[form.value.platform as keyof typeof platformConfig];
+  const config = platformConfig[form.platform as keyof typeof platformConfig];
   return config?.postTypes || ['Post'];
 });
 
@@ -81,26 +170,60 @@ function openScheduleModal() {
 function closeScheduleModal() {
   showScheduleModal.value = false;
   // Reset form
-  form.value = {
-    platform: 'Facebook',
-    content: '',
-    media: [],
-    mediaPreviews: [],
-    datetime: '',
-    client: '',
-    postType: 'Post',
-  };
+  form.reset();
 }
+
+const isDragging = ref(false);
 
 function handleFileUpload(e: Event) {
   const target = e.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
-    form.value.media = Array.from(target.files);
-    form.value.mediaPreviews = form.value.media.map(file => ({
-      url: URL.createObjectURL(file),
-      type: file.type,
-      name: file.name
-    }));
+    const files = Array.from(target.files);
+    const validFiles = files.filter(file => {
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
+      const maxSize = 10 * 1024 * 1024;
+      if (!validTypes.includes(file.type)) {
+        form.setError('media', 'Invalid file type. Only images and videos are allowed.');
+        return false;
+      }
+      if (file.size > maxSize) {
+        form.setError('media', `File ${file.name} is too large. Maximum size is 10MB.`);
+        return false;
+      }
+      return true;
+    });
+    if (validFiles.length > 0) {
+      form.media = [...(Array.isArray(form.media) ? form.media : []), ...validFiles];
+    }
+  }
+  target.value = '';
+}
+
+function handleFileDrop(e: DragEvent) {
+  isDragging.value = false;
+  if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+    const input = document.getElementById('media-upload') as HTMLInputElement;
+    if (input) {
+      input.files = e.dataTransfer.files;
+      const event = new Event('change');
+      input.dispatchEvent(event);
+    }
+  }
+}
+
+function removeFile(index: number) {
+  if (Array.isArray(form.media) && form.media.length > 0) {
+    const newMedia = [...form.media];
+    newMedia.splice(index, 1);
+    form.media = newMedia;
+  }
+}
+
+// Auto-upload when files are selected
+function triggerFileInput() {
+  const input = document.getElementById('media-upload');
+  if (input) {
+    input.click();
   }
 }
 
@@ -108,19 +231,38 @@ function handleFileUpload(e: Event) {
 const platformConfig = {
   'Facebook': {
     shortName: 'FB',
-    postTypes: ['Post', 'Story', 'Reel']
+    postTypes: ['Post', 'Story', 'Reel'],
+    icon: 'facebook',
+    color: 'bg-blue-100 text-blue-600',
+    iconColor: 'text-blue-500'
   },
   'Instagram': {
     shortName: 'IG',
-    postTypes: ['Post', 'Story', 'Reel', 'Carousel']
+    postTypes: ['Post', 'Story', 'Reel', 'Carousel'],
+    icon: 'instagram',
+    color: 'bg-pink-100 text-pink-600',
+    iconColor: 'text-pink-500'
   },
   'Twitter': {
     shortName: 'X',
-    postTypes: ['Post', 'Thread']
+    postTypes: ['Post', 'Thread'],
+    icon: 'twitter',
+    color: 'bg-sky-100 text-sky-600',
+    iconColor: 'text-sky-500'
+  },
+  'TikTok': {
+    shortName: 'TT',
+    postTypes: ['Video', 'Live', 'Duet', 'Stitch'],
+    icon: 'tiktok',
+    color: 'bg-black text-white',
+    iconColor: 'text-black'
   },
   'LinkedIn': {
     shortName: 'IN',
-    postTypes: ['Post', 'Article']
+    postTypes: ['Post', 'Article', 'Document'],
+    icon: 'linkedin',
+    color: 'bg-blue-50 text-blue-700',
+    iconColor: 'text-blue-600'
   }
 };
 
@@ -148,113 +290,7 @@ function getTextPreview(text: string, maxLength = 40) {
   return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
 }
 
-async function submitSchedule() {
-  console.log('1. Starting submitSchedule function');
-  // Clear previous errors
-  Object.keys(errors).forEach(key => delete errors[key]);
-  
-  try {
-    console.log('2. Form values:', JSON.stringify(form.value, null, 2));
-    
-    // Create FormData instead of URLSearchParams for better file handling
-    const formData = new FormData();
-    formData.append('content', form.value.content);
-    formData.append('scheduleDate', form.value.datetime);
-    formData.append('platform', form.value.platform);
-    formData.append('postType', form.value.postType);
-    formData.append('client_id', form.value.client);
-    formData.append('status', 'scheduled');
-    
-    // Handle media files properly
-    if (form.value.media.length > 0) {
-      form.value.media.forEach((file, index) => {
-        formData.append(`media[${index}]`, file);
-      });
-    }
 
-    console.log('3. Sending request to /agency/posts');
-    
-    // Try multiple ways to get CSRF token
-    let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    if (!token) {
-      // Fallback: try to get from cookie
-      token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('XSRF-TOKEN='))
-        ?.split('=')[1];
-      if (token) {
-        token = decodeURIComponent(token);
-      }
-    }
-    
-    console.log('CSRF Token:', token ? 'Found' : 'Not found');
-    
-    const response = await fetch('/agency/posts', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(token && { 'X-CSRF-TOKEN': token })
-      },
-      credentials: 'same-origin',
-      body: formData
-    });
-    
-    console.log('4. Received response, status:', response.status);
-    const data = await response.json();
-    console.log('5. Response data:', data);
-    
-    if (!response.ok) {
-      // Handle validation errors
-      if (response.status === 422 && data.errors) {
-        Object.entries(data.errors).forEach(([field, messages]) => {
-          errors[field] = Array.isArray(messages) ? messages : [messages];
-        });
-        console.error('Validation errors:', errors);
-        return;
-      }
-      throw new Error(data.message || 'Failed to schedule post');
-    }
-    
-    console.log('6. Post created successfully:', data);
-    // Add the new post to the local state
-    if (data.post) {
-      console.log('7. Adding post to local state:', data.post);
-      const newPost = {
-        ...data.post,
-        scheduleDate: data.post.scheduleDate ? new Date(data.post.scheduleDate).toISOString() : null
-      };
-      console.log('8. Formatted new post:', newPost);
-      posts.value = [...posts.value, newPost];
-      console.log('9. Updated posts array:', posts.value);
-    }
-    // Reset form and close modal
-    form.value = {
-      platform: 'Facebook',
-      content: '',
-      media: [],
-      mediaPreviews: [],
-      datetime: '',
-      client: '',
-      postType: 'Post',
-    };
-    closeScheduleModal();
-  } catch (error) {
-    console.error('Error in submitSchedule:', error);
-    // Fix: cast error to Error for type safety
-    const err = error as Error;
-    const errorMessage = err.message || 'An error occurred while scheduling the post';
-    errors.general = [errorMessage];
-    console.error('Error details:', { message: err.message, stack: err.stack });
-    
-    // Show error to user
-    alert(`Error: ${errorMessage}`);
-  } finally {
-    console.log('10. Final state - showScheduleModal:', showScheduleModal.value);
-    console.log('11. Final state - form:', form.value);
-    console.log('12. Final state - posts count:', posts.value.length);
-  }
-}
 
 function handleDeleteEvent(eventId: string) {
   // For now, just log. Integrate with backend later.
@@ -277,41 +313,46 @@ const events = computed<EventInput[]>(() => {
   return (posts.value ?? [])
     .filter(post => !!post.scheduleDate)
     .map(post => {
-      // Determine color by platform
+      // Defensive: fallback for platform/postType
+      const platform = typeof post.platform === 'string' ? post.platform : '';
+      const postType = typeof post.postType === 'string' ? post.postType : '';
       let backgroundColor = '#2563eb';
       let borderColor = '#2563eb';
-      if (post.platform === 'Facebook') {
+      if (platform === 'Facebook') {
         backgroundColor = '#1877F2'; borderColor = '#1877F2';
-      } else if (post.platform === 'Instagram') {
+      } else if (platform === 'Instagram') {
         backgroundColor = '#E4405F'; borderColor = '#E4405F';
-      } else if (post.platform === 'Twitter') {
+      } else if (platform === 'Twitter') {
         backgroundColor = '#1DA1F2'; borderColor = '#1DA1F2';
-      } else if (post.platform === 'LinkedIn') {
+      } else if (platform === 'LinkedIn') {
         backgroundColor = '#0077B5'; borderColor = '#0077B5';
       }
-
-      // All-day if no time part
-      const allDay = post.scheduleDate && post.scheduleDate.length <= 10;
-      
-      // Ensure the date is in the correct format for FullCalendar
-      const eventDate = post.scheduleDate ? new Date(post.scheduleDate).toISOString() : new Date().toISOString();
-      
+      // Defensive: coerce scheduleDate to string
+      const scheduleDateStr = post.scheduleDate ? String(post.scheduleDate) : '';
+      const allDay = scheduleDateStr.length > 0 && scheduleDateStr.length <= 10;
+      // Defensive: fallback for eventDate
+      let eventDate = new Date().toISOString();
+      if (scheduleDateStr) {
+        try {
+          eventDate = new Date(scheduleDateStr).toISOString();
+        } catch {}
+      }
       return {
         id: String(post.id),
-        title: `${post.platform ? post.platform.charAt(0) : ''}${post.postType ? ' ' + post.postType : ''}`,
+        title: `${platform ? platform.charAt(0) : ''}${postType ? ' ' + postType : ''}`,
         start: eventDate,
         allDay,
         backgroundColor,
         borderColor,
         extendedProps: {
-          content: post.content,
-          platform: post.platform,
-          postType: post.postType,
-          client: post.client,
-          media: post.media,
-          feedback: post.feedback,
-          status: post.status,
-          created_at: post.created_at,
+          content: post.content ?? '',
+          platform,
+          postType,
+          client: post.client ?? '',
+          media: post.media ?? [],
+          feedback: post.feedback ?? '',
+          status: post.status ?? '',
+          created_at: post.created_at ?? '',
         }
       };
     });
@@ -552,64 +593,191 @@ const formattedSchedule = computed(() => {
         </DialogHeader>
         <form @submit.prevent="submitSchedule" class="flex flex-col gap-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Platform</label>
-            <select v-model="form.platform" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
-              <option v-for="p in platforms" :key="p" :value="p">
-                {{ p }}
-              </option>
-            </select>
+            <label class="block text-sm font-medium mb-2">Platform</label>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-2">
+              <button
+                v-for="platform in platforms"
+                :key="platform"
+                type="button"
+                @click="form.platform = platform"
+                class="flex flex-col items-center justify-center p-3 rounded-lg border transition-colors"
+                :class="{
+                  'border-blue-500 bg-blue-50 dark:bg-blue-900/30': form.platform === platform,
+                  'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800': form.platform !== platform
+                }"
+              >
+                <div class="w-8 h-8 mb-1 flex items-center justify-center">
+                  <img 
+                    :src="`/images/platforms/${platform.toLowerCase()}.svg`" 
+                    :alt="platform"
+                    class="w-6 h-6"
+                    v-if="!['TikTok'].includes(platform)"
+                  />
+                  <span v-else class="text-xl">
+                    {{ platform === 'TikTok' ? '🎵' : '' }}
+                  </span>
+                </div>
+                <span class="text-xs font-medium">{{ platformConfig[platform]?.shortName || platform }}</span>
+              </button>
+            </div>
+            <div v-if="form.errors.platform" class="text-xs text-red-500 mt-1">{{ form.errors.platform }}</div>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Type</label>
-            <select v-model="form.postType" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
-              <option v-for="type in availablePostTypes" :key="type" :value="type">
-                {{ postTypeIcons[type as keyof typeof postTypeIcons] }} {{ type }}
-              </option>
-            </select>
+            <label class="block text-sm font-medium mb-2">Post Type</label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+              <button
+                v-for="type in availablePostTypes"
+                :key="type"
+                type="button"
+                @click="form.postType = type"
+                class="flex items-center justify-center p-2 rounded-lg border transition-colors text-sm"
+                :class="{
+                  'border-blue-500 bg-blue-50 dark:bg-blue-900/30': form.postType === type,
+                  'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800': form.postType !== type
+                }"
+              >
+                <span class="mr-1">{{ postTypeIcons[type as keyof typeof postTypeIcons] || '📌' }}</span>
+                <span>{{ type }}</span>
+              </button>
+            </div>
+            <div v-if="form.errors.postType" class="text-xs text-red-500 mt-1">{{ form.errors.postType }}</div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Content</label>
-            <textarea v-model="form.content" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" rows="3" placeholder="Write your post content..."></textarea>
+            <div class="relative">
+              <textarea 
+                v-model="form.content" 
+                class="w-full rounded border p-3 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+                rows="4" 
+                :placeholder="`What's on your mind?`"
+              ></textarea>
+              <div class="absolute bottom-2 right-2 text-xs text-gray-500">
+                {{ form.content?.length || 0 }}/500
+              </div>
+            </div>
+            <div v-if="form.errors.content" class="text-xs text-red-500 mt-1">
+              {{ form.errors.content }}
+            </div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Media Upload</label>
-            <input type="file" accept="image/*,video/*" multiple @change="handleFileUpload" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
-            <div v-if="form.mediaPreviews.length" class="flex flex-row gap-4 mt-2">
-              <div v-for="(preview, idx) in form.mediaPreviews" :key="preview.url" class="flex flex-col items-center w-24">
-                <img v-if="preview.type.startsWith('image')" :src="preview.url" class="w-20 h-20 object-cover rounded border mb-1" />
-                <video v-else controls :src="preview.url" class="w-20 h-20 object-cover rounded border mb-1" />
-                <div class="text-xs text-green-600 break-all text-center">{{ getShortFileName(preview.name, 8) }}</div>
+            <div class="border-2 border-dashed rounded-lg p-4 transition-colors hover:border-blue-500"
+                 @dragover.prevent
+                 @drop.prevent="handleFileDrop"
+                 :class="{'border-blue-500 bg-blue-50 dark:bg-blue-900/10': isDragging}">
+              <div class="text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  <button type="button" class="text-blue-600 hover:text-blue-500">
+                    Upload files
+                  </button>
+                  or drag and drop
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  PNG, JPG, GIF, MP4 up to 10MB
+                </p>
+                <input 
+                  type="file" 
+                  id="media-upload"
+                  accept="image/*,video/*" 
+                  multiple 
+                  @change="handleFileUpload" 
+                  class="hidden"
+                />
+              </div>
+              <!-- Preview of selected files -->
+              <div v-if="form.media && form.media.length > 0" class="mt-4">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Selected files ({{ form.media.length }})
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(file, index) in form.media" :key="index" class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <div class="flex items-center space-x-2">
+                      <svg v-if="file.type.startsWith('image/')" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <svg v-else-if="file.type.startsWith('video/')" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-xs">
+                        {{ file.name }}
+                      </span>
+                    </div>
+                    <button 
+                      type="button" 
+                      @click="removeFile(index)"
+                      class="text-red-500 hover:text-red-700"
+                    >
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</div>
+            <div v-if="form.errors.media" class="text-xs text-red-500 mt-1">
+              {{ Array.isArray(form.errors.media) ? form.errors.media.join(', ') : form.errors.media }}
+            </div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Schedule Date & Time</label>
-            <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
-            <div v-if="errors.scheduleDate" class="text-xs text-red-500 mt-1">{{ errors.scheduleDate[0] }}</div>
+            <input v-model="form.scheduleDate" type="datetime-local" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            <div v-if="form.errors.scheduleDate" class="text-xs text-red-500 mt-1">{{ form.errors.scheduleDate }}</div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Client</label>
-            <select v-model="form.client" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
+            <select v-model="form.client_id" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
+              <option value="">Select a client</option>
               <option v-for="c in props.clients" :key="c.id" :value="c.id">{{ c.company_name }}</option>
             </select>
+            <div v-if="form.errors.client_id" class="text-xs text-red-500 mt-1">{{ form.errors.client_id }}</div>
+          </div>
+          <div v-if="form.hasErrors" class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  There {{ Object.keys(form.errors).length === 1 ? 'is' : 'are' }} {{ Object.keys(form.errors).length }} error{{ Object.keys(form.errors).length === 1 ? '' : 's' }} with your submission
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li v-for="(error, field) in form.errors" :key="field">
+                      {{ error }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
           <DialogFooter class="mt-4 flex justify-end gap-3">
             <button 
-              type="button" 
-              class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              type="button"
               @click="closeScheduleModal"
+              :disabled="form.processing"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button 
-              type="submit" 
-              class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              type="submit"
+              :disabled="form.processing"
+              class="relative px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Schedule Post
+              <span :class="{ 'invisible': form.processing }">Schedule</span>
+              <span v-if="form.processing" class="absolute inset-0 flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </span>
             </button>
           </DialogFooter>
         </form>

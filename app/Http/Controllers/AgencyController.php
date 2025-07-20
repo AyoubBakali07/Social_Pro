@@ -65,7 +65,7 @@ class AgencyController extends Controller
                     'media' => $post->media,
                     'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toIso8601String() : null,
                     'platform' => $post->platform,
-                    'postType' => $post->post_type, // Ensure this matches your database column
+                    'postType' => $post->postType, // Ensure this matches your database column
                     'status' => $post->status,
                     'feedback' => $post->feedback,
                     'client' => $post->client ? $post->client->company_name : null,
@@ -163,7 +163,7 @@ class AgencyController extends Controller
             $validated = $request->validate([
                 'content' => 'required|string',
                 'media' => 'nullable|array',
-                'media.*' => 'nullable|string',
+                'media.*' => 'file|mimes:jpg,jpeg,png,gif,mov,mp4,avi|max:20480', // 20MB Max
                 'scheduleDate' => 'required|date',
                 'platform' => 'required|string',
                 'postType' => 'required|string',
@@ -174,57 +174,42 @@ class AgencyController extends Controller
 
             $user = auth()->user();
             $agency = $user->agency;
-            
+
             if (!$agency) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No agency found for this user.'
-                ], 403);
+                return redirect()->back()->withErrors(['agency' => 'No agency found for this user.'])->withInput();
+            }
+
+            $mediaPaths = [];
+            if ($request->hasFile('media')) {
+                foreach ($request->file('media') as $file) {
+                    $path = $file->store('posts/media', 'public');
+                    $mediaPaths[] = $path;
+                }
             }
 
             $post = Post::create([
                 'agency_id' => $agency->id,
                 'client_id' => $validated['client_id'],
                 'content' => $validated['content'],
-                'media' => $validated['media'] ?? null,
+                'media' => json_encode($mediaPaths), // store as JSON if column is text
                 'scheduleDate' => $validated['scheduleDate'],
                 'platform' => $validated['platform'],
-                'post_type' => $validated['postType'],
+                'postType' => $validated['postType'],
                 'status' => $validated['status'],
                 'feedback' => $validated['feedback'] ?? null,
             ]);
 
+            // Optionally eager load client for dashboard
             $post->load('client');
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Post scheduled successfully',
-                'post' => [
-                    'id' => $post->id,
-                    'content' => $post->content,
-                    'media' => $post->media,
-                    'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toIso8601String() : null,
-                    'platform' => $post->platform,
-                    'postType' => $post->post_type,
-                    'status' => $post->status,
-                    'client' => $post->client ? $post->client->company_name : null,
-                    'created_at' => $post->created_at->toIso8601String(),
-                ]
-            ], 201);
-
+            // Redirect back with success message for Inertia
+            return redirect()->back()->with('success', 'Post scheduled successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+            // Redirect back with validation errors for Inertia
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Log::error('Error creating post: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to schedule post',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()->withErrors(['form' => 'Failed to schedule post: ' . $e->getMessage()])->withInput();
         }
     }
 } 

@@ -21,6 +21,11 @@ class Post extends Model
         'feedback',
     ];
 
+    protected $casts = [
+        'media' => 'array',
+        'scheduleDate' => 'datetime',
+    ];
+
     public function agency()
     {
         return $this->belongsTo(Agency::class);
