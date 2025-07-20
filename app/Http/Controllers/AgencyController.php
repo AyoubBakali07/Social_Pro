@@ -56,21 +56,23 @@ class AgencyController extends Controller
             ->count();
         $posts = Post::with('client')
             ->where('agency_id', $agency->id)
+            ->whereNotNull('scheduleDate') // Only include posts with a scheduled date
             ->get()
             ->map(function ($post) {
                 return [
                     'id' => $post->id,
                     'content' => $post->content,
                     'media' => $post->media,
-                    'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toISOString() : null,
+                    'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toIso8601String() : null,
                     'platform' => $post->platform,
-                    'postType' => $post->postType,
+                    'postType' => $post->post_type, // Ensure this matches your database column
                     'status' => $post->status,
                     'feedback' => $post->feedback,
                     'client' => $post->client ? $post->client->company_name : null,
-                    'created_at' => $post->created_at,
+                    'created_at' => $post->created_at->toIso8601String(),
                 ];
             });
+        $clients = Client::where('agency_id', $agency->id)->get(['id', 'company_name']);
         return Inertia::render('Agency/Dashboard', [
             'stats' => [
                 [
@@ -99,6 +101,7 @@ class AgencyController extends Controller
                 ],
             ],
             'posts' => $posts,
+            'clients' => $clients,
         ]);
     }
 
@@ -152,5 +155,76 @@ class AgencyController extends Controller
             ],
             'clients' => $clients,
         ]);
+    }
+
+    public function storePost(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'content' => 'required|string',
+                'media' => 'nullable|array',
+                'media.*' => 'nullable|string',
+                'scheduleDate' => 'required|date',
+                'platform' => 'required|string',
+                'postType' => 'required|string',
+                'client_id' => 'required|exists:clients,id',
+                'status' => 'required|string',
+                'feedback' => 'nullable|string',
+            ]);
+
+            $user = auth()->user();
+            $agency = $user->agency;
+            
+            if (!$agency) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No agency found for this user.'
+                ], 403);
+            }
+
+            $post = Post::create([
+                'agency_id' => $agency->id,
+                'client_id' => $validated['client_id'],
+                'content' => $validated['content'],
+                'media' => $validated['media'] ?? null,
+                'scheduleDate' => $validated['scheduleDate'],
+                'platform' => $validated['platform'],
+                'post_type' => $validated['postType'],
+                'status' => $validated['status'],
+                'feedback' => $validated['feedback'] ?? null,
+            ]);
+
+            $post->load('client');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Post scheduled successfully',
+                'post' => [
+                    'id' => $post->id,
+                    'content' => $post->content,
+                    'media' => $post->media,
+                    'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toIso8601String() : null,
+                    'platform' => $post->platform,
+                    'postType' => $post->post_type,
+                    'status' => $post->status,
+                    'client' => $post->client ? $post->client->company_name : null,
+                    'created_at' => $post->created_at->toIso8601String(),
+                ]
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error creating post: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to schedule post',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 } 

@@ -11,6 +11,8 @@ Route::get('/agency/dashboard', [\App\Http\Controllers\AgencyController::class, 
 
 Route::get('/agency/client', [\App\Http\Controllers\AgencyController::class, 'clientStats'])->middleware(['auth', 'verified'])->name('agency.client');
 
+Route::post('/agency/posts', [\App\Http\Controllers\AgencyController::class, 'storePost'])->middleware(['auth', 'verified']);
+
 Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('admin.dashboard');
 
 Route::get('/client/dashboard', [\App\Http\Controllers\ClientController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('client.dashboard');

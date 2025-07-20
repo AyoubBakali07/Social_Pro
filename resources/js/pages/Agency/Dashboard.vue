@@ -1,7 +1,8 @@
 <script setup lang="ts">
-const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, posts: Array<any> }>();
+const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, posts: Array<any>, clients: Array<{ id: number; company_name: string }> }>();
 
 import { watch, ref, reactive, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -62,7 +63,7 @@ const form = ref({
   media: [] as File[],
   mediaPreviews: [] as { url: string, type: string, name: string }[],
   datetime: '',
-  client: '',
+  client: '', // will hold client id
   postType: 'Post',
 });
 const platforms = ['Facebook', 'Instagram', 'Twitter', 'LinkedIn'];
@@ -72,7 +73,6 @@ const availablePostTypes = computed(() => {
   const config = platformConfig[form.value.platform as keyof typeof platformConfig];
   return config?.postTypes || ['Post'];
 });
-const clients = ['ABC Company', 'XYZ Brand']; // Example clients
 
 function openScheduleModal() {
   showScheduleModal.value = true;
@@ -148,46 +148,112 @@ function getTextPreview(text: string, maxLength = 40) {
   return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
 }
 
-function submitSchedule() {
-    console.log('Raw datetime from form:', form.value.datetime);
-    let startValue = '';
-    let allDay = false;
-    if (form.value.datetime) {
-        startValue = form.value.datetime;
-        // If the datetime string has no time part (just a date), treat as all-day
-        allDay = !form.value.datetime.includes('T') || form.value.datetime.endsWith('T00:00');
-        console.log('Start value for event:', startValue, 'allDay:', allDay);
+async function submitSchedule() {
+  console.log('1. Starting submitSchedule function');
+  // Clear previous errors
+  Object.keys(errors).forEach(key => delete errors[key]);
+  
+  try {
+    console.log('2. Form values:', JSON.stringify(form.value, null, 2));
+    
+    // Create FormData instead of URLSearchParams for better file handling
+    const formData = new FormData();
+    formData.append('content', form.value.content);
+    formData.append('scheduleDate', form.value.datetime);
+    formData.append('platform', form.value.platform);
+    formData.append('postType', form.value.postType);
+    formData.append('client_id', form.value.client);
+    formData.append('status', 'scheduled');
+    
+    // Handle media files properly
+    if (form.value.media.length > 0) {
+      form.value.media.forEach((file, index) => {
+        formData.append(`media[${index}]`, file);
+      });
+    }
+
+    console.log('3. Sending request to /agency/posts');
+    
+    // Try multiple ways to get CSRF token
+    let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!token) {
+      // Fallback: try to get from cookie
+      token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+      if (token) {
+        token = decodeURIComponent(token);
+      }
     }
     
-    const newEvent = {
-        title: getEventTitle(form.value.platform, form.value.postType),
-        start: startValue,
-        allDay: allDay,
-        backgroundColor: getPlatformColor(form.value.platform),
-        borderColor: getPlatformColor(form.value.platform),
-        extendedProps: {
-            client: form.value.client,
-            content: form.value.content,
-            platform: form.value.platform,
-            postType: form.value.postType,
-            // Add media preview if available
-            mediaList: form.value.mediaPreviews
-        }
+    console.log('CSRF Token:', token ? 'Found' : 'Not found');
+    
+    const response = await fetch('/agency/posts', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(token && { 'X-CSRF-TOKEN': token })
+      },
+      credentials: 'same-origin',
+      body: formData
+    });
+    
+    console.log('4. Received response, status:', response.status);
+    const data = await response.json();
+    console.log('5. Response data:', data);
+    
+    if (!response.ok) {
+      // Handle validation errors
+      if (response.status === 422 && data.errors) {
+        Object.entries(data.errors).forEach(([field, messages]) => {
+          errors[field] = Array.isArray(messages) ? messages : [messages];
+        });
+        console.error('Validation errors:', errors);
+        return;
+      }
+      throw new Error(data.message || 'Failed to schedule post');
+    }
+    
+    console.log('6. Post created successfully:', data);
+    // Add the new post to the local state
+    if (data.post) {
+      console.log('7. Adding post to local state:', data.post);
+      const newPost = {
+        ...data.post,
+        scheduleDate: data.post.scheduleDate ? new Date(data.post.scheduleDate).toISOString() : null
+      };
+      console.log('8. Formatted new post:', newPost);
+      posts.value = [...posts.value, newPost];
+      console.log('9. Updated posts array:', posts.value);
+    }
+    // Reset form and close modal
+    form.value = {
+      platform: 'Facebook',
+      content: '',
+      media: [],
+      mediaPreviews: [],
+      datetime: '',
+      client: '',
+      postType: 'Post',
     };
-    
-    console.log('New event to add:', newEvent);
-    
-    // Add to reactive array for state management
-    events.value.push(newEvent);
-    
-    // IMPORTANT: Add the event directly to FullCalendar using its API
-    if (calendarRef.value) {
-        const calendarApi = calendarRef.value.getApi();
-        calendarApi.addEvent(newEvent);
-        console.log('Event added to calendar via API');
-    }
-    
     closeScheduleModal();
+  } catch (error) {
+    console.error('Error in submitSchedule:', error);
+    // Fix: cast error to Error for type safety
+    const err = error as Error;
+    const errorMessage = err.message || 'An error occurred while scheduling the post';
+    errors.general = [errorMessage];
+    console.error('Error details:', { message: err.message, stack: err.stack });
+    
+    // Show error to user
+    alert(`Error: ${errorMessage}`);
+  } finally {
+    console.log('10. Final state - showScheduleModal:', showScheduleModal.value);
+    console.log('11. Final state - form:', form.value);
+    console.log('12. Final state - posts count:', posts.value.length);
+  }
 }
 
 function handleDeleteEvent(eventId: string) {
@@ -204,42 +270,66 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 import type { EventInput } from '@fullcalendar/core';
 
-const events = computed<EventInput[]>(() =>
-  (props.posts ?? []).map(post => {
-    // Determine color by platform
-    let backgroundColor = '#2563eb';
-    let borderColor = '#2563eb';
-    if (post.platform === 'Facebook') {
-      backgroundColor = '#1877F2'; borderColor = '#1877F2';
-    } else if (post.platform === 'Instagram') {
-      backgroundColor = '#E4405F'; borderColor = '#E4405F';
-    } else if (post.platform === 'Twitter') {
-      backgroundColor = '#1DA1F2'; borderColor = '#1DA1F2';
-    } else if (post.platform === 'LinkedIn') {
-      backgroundColor = '#0077B5'; borderColor = '#0077B5';
-    }
-    // All-day if no time part
-    const allDay = post.scheduleDate && post.scheduleDate.length <= 10;
-    return {
-      id: post.id,
-      title: `${post.platform ? post.platform.charAt(0) : ''}${post.postType ? ' ' + post.postType : ''}`,
-      start: post.scheduleDate,
-      allDay,
-      backgroundColor,
-      borderColor,
-      extendedProps: {
-        content: post.content,
-        platform: post.platform,
-        postType: post.postType,
-        client: post.client,
-        media: post.media,
-        feedback: post.feedback,
-        status: post.status,
-        created_at: post.created_at,
+const posts = ref([...props.posts]); // Local posts state
+const errors: Record<string, string[]> = reactive({}); // Use reactive object for errors with string[] values
+
+const events = computed<EventInput[]>(() => {
+  return (posts.value ?? [])
+    .filter(post => !!post.scheduleDate)
+    .map(post => {
+      // Determine color by platform
+      let backgroundColor = '#2563eb';
+      let borderColor = '#2563eb';
+      if (post.platform === 'Facebook') {
+        backgroundColor = '#1877F2'; borderColor = '#1877F2';
+      } else if (post.platform === 'Instagram') {
+        backgroundColor = '#E4405F'; borderColor = '#E4405F';
+      } else if (post.platform === 'Twitter') {
+        backgroundColor = '#1DA1F2'; borderColor = '#1DA1F2';
+      } else if (post.platform === 'LinkedIn') {
+        backgroundColor = '#0077B5'; borderColor = '#0077B5';
       }
-    };
-  })
-);
+
+      // All-day if no time part
+      const allDay = post.scheduleDate && post.scheduleDate.length <= 10;
+      
+      // Ensure the date is in the correct format for FullCalendar
+      const eventDate = post.scheduleDate ? new Date(post.scheduleDate).toISOString() : new Date().toISOString();
+      
+      return {
+        id: String(post.id),
+        title: `${post.platform ? post.platform.charAt(0) : ''}${post.postType ? ' ' + post.postType : ''}`,
+        start: eventDate,
+        allDay,
+        backgroundColor,
+        borderColor,
+        extendedProps: {
+          content: post.content,
+          platform: post.platform,
+          postType: post.postType,
+          client: post.client,
+          media: post.media,
+          feedback: post.feedback,
+          status: post.status,
+          created_at: post.created_at,
+        }
+      };
+    });
+});
+
+// Add this watcher to debug calendar events
+watch(events, (newEvents) => {
+  console.log('Computed events:', newEvents);
+  if (calendarRef.value) {
+    const calendarApi = calendarRef.value.getApi();
+    console.log('Calendar API events:', calendarApi.getEvents().map(e => ({
+      id: e.id,
+      title: e.title,
+      start: e.start,
+      allDay: e.allDay
+    })));
+  }
+}, { immediate: true, deep: true });
 
 watch(events, (val) => {
   console.log('FullCalendar events.value:', JSON.stringify(val, null, 2));
@@ -442,8 +532,10 @@ const formattedSchedule = computed(() => {
                 <!-- Add ref to FullCalendar -->
                 <FullCalendar 
                   ref="calendarRef" 
-                  :options="calendarOptions" 
-                  :events="events"
+                  :options="{
+                    ...calendarOptions,
+                    events: events
+                  }"
                 />
             </div>
         </div>
@@ -494,11 +586,12 @@ const formattedSchedule = computed(() => {
           <div>
             <label class="block text-sm font-medium mb-1">Schedule Date & Time</label>
             <input v-model="form.datetime" type="datetime-local" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            <div v-if="errors.scheduleDate" class="text-xs text-red-500 mt-1">{{ errors.scheduleDate[0] }}</div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Client</label>
             <select v-model="form.client" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]">
-              <option v-for="c in clients" :key="c" :value="c">{{ c }}</option>
+              <option v-for="c in props.clients" :key="c.id" :value="c.id">{{ c.company_name }}</option>
             </select>
           </div>
           <DialogFooter class="mt-4 flex justify-end gap-3">
