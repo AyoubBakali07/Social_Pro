@@ -5,6 +5,7 @@ const props = defineProps<{
   label: string;
   value: string | number;
   color?: string;
+  description?: string;
 }>();
 const iconBg = computed(() => {
   // Pick a bg color based on label or color prop
@@ -23,6 +24,7 @@ const iconBg = computed(() => {
     <div>
       <div class="text-gray-500 text-sm">{{ label }}</div>
       <div class="text-2xl font-bold text-gray-900" :class="color">{{ value }}</div>
+      <div v-if="description" class="text-xs mt-0.5" :class="label === 'Total Agencies' || label === 'Total Clients' ? 'text-green-500' : 'text-gray-400'">{{ description }}</div>
     </div>
   </div>
 </template> 
