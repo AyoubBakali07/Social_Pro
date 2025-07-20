@@ -5,73 +5,13 @@ import { ref, computed } from 'vue'
 import StatCard from '@/components/ui/card/StatCard.vue'
 import GenericTable from '@/components/ui/GenericTable.vue'
 
-const stats = [
-  {
-    label: 'Total Agencies',
-    value: 24,
-    description: '+2 this month',
-    color: 'blue',
-    icon: `<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
-  },
-  {
-    label: 'Active',
-    value: 18,
-    description: '75% of total',
-    color: 'green',
-    icon: `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-  },
-  {
-    label: 'Pending',
-    value: 4,
-    description: 'Awaiting approval',
-    color: 'amber',
-    icon: `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-  },
-  {
-    label: 'Suspended',
-    value: 2,
-    description: 'Requires attention',
-    color: 'red',
-    icon: `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
-  },
-]
-
-const agencies = ref([
-  {
-    name: 'Digital Marketing Pro',
-    email: 'contact@digitalmarketingpro.com',
-    clients: 8,
-    status: 'active',
-    created: '2024-01-15',
-  },
-  {
-    name: 'Creative Solutions Ltd',
-    email: 'hello@creativesolutions.com',
-    clients: 5,
-    status: 'pending',
-    created: '2024-02-01',
-  },
-  {
-    name: 'Social Media Experts',
-    email: 'info@smexperts.com',
-    clients: 12,
-    status: 'active',
-    created: '2024-01-08',
-  },
-  {
-    name: 'Brand Builders Inc',
-    email: 'team@brandbuilders.com',
-    clients: 3,
-    status: 'suspended',
-    created: '2024-02-20',
-  },
-])
+const props = defineProps<{ stats: Array<{ label: string; value: number|string; color: string; icon: string; description?: string }>, agencies: Array<any> }>();
 
 const search = ref('')
 
 const filteredAgencies = computed(() => {
-  if (!search.value) return agencies.value
-  return agencies.value.filter(a =>
+  if (!search.value) return props.agencies
+  return props.agencies.filter(a =>
     a.name.toLowerCase().includes(search.value.toLowerCase()) ||
     a.email.toLowerCase().includes(search.value.toLowerCase())
   )
@@ -128,7 +68,7 @@ const columns = [
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
         <StatCard
-          v-for="stat in stats"
+          v-for="stat in props.stats"
           :key="stat.label"
           :icon="stat.icon"
           :label="stat.label"

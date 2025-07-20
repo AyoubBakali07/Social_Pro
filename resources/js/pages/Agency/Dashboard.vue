@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, posts: Array<any> }>();
+
 import { watch, ref, reactive, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -202,48 +204,42 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 import type { EventInput } from '@fullcalendar/core';
 
-const events = ref<EventInput[]>([
-  { 
-    title: '📝 FB Post', 
-    start: '2025-07-11', 
-    allDay: true,
-    backgroundColor: '#1877F2',
-    borderColor: '#1877F2'
-  },
-  { 
-    title: '🎬 IG Reel', 
-    start: '2025-07-16T14:30', 
-    allDay: false,
-    backgroundColor: '#E4405F',
-    borderColor: '#E4405F'
-  },
-  { 
-    title: '📝 X Post', 
-    start: '2025-07-15', 
-    allDay: true,
-    backgroundColor: '#1DA1F2',
-    borderColor: '#1DA1F2'
-  },
-  { 
-    title: '📝 IN Post', 
-    start: '2025-07-06', 
-    allDay: true,
-    backgroundColor: '#0077B5',
-    borderColor: '#0077B5'
-  },
-  {
-    title: '📝 FB Weekly Post',
-    rrule: {
-      freq: 'weekly',
-      interval: 1,
-      byweekday: ['mo'],
-      dtstart: '2025-07-07T10:00:00',
-      until: '2025-12-31'
-    },
-    backgroundColor: '#1877F2',
-    borderColor: '#1877F2'
-  }
-]);
+const events = computed<EventInput[]>(() =>
+  (props.posts ?? []).map(post => {
+    // Determine color by platform
+    let backgroundColor = '#2563eb';
+    let borderColor = '#2563eb';
+    if (post.platform === 'Facebook') {
+      backgroundColor = '#1877F2'; borderColor = '#1877F2';
+    } else if (post.platform === 'Instagram') {
+      backgroundColor = '#E4405F'; borderColor = '#E4405F';
+    } else if (post.platform === 'Twitter') {
+      backgroundColor = '#1DA1F2'; borderColor = '#1DA1F2';
+    } else if (post.platform === 'LinkedIn') {
+      backgroundColor = '#0077B5'; borderColor = '#0077B5';
+    }
+    // All-day if no time part
+    const allDay = post.scheduleDate && post.scheduleDate.length <= 10;
+    return {
+      id: post.id,
+      title: `${post.platform ? post.platform.charAt(0) : ''}${post.postType ? ' ' + post.postType : ''}`,
+      start: post.scheduleDate,
+      allDay,
+      backgroundColor,
+      borderColor,
+      extendedProps: {
+        content: post.content,
+        platform: post.platform,
+        postType: post.postType,
+        client: post.client,
+        media: post.media,
+        feedback: post.feedback,
+        status: post.status,
+        created_at: post.created_at,
+      }
+    };
+  })
+);
 
 watch(events, (val) => {
   console.log('FullCalendar events.value:', JSON.stringify(val, null, 2));
@@ -399,32 +395,6 @@ const formattedSchedule = computed(() => {
   });
 });
 
-const stats = [
-  {
-    label: 'Total Clients',
-    value: 12,
-    color: 'blue',
-    icon: `<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>`,
-  },
-  {
-    label: 'Scheduled Posts',
-    value: 24,
-    color: 'green',
-    icon: `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>`,
-  },
-  {
-    label: 'Pending Approvals',
-    value: 8,
-    color: 'yellow',
-    icon: `<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
-  },
-  {
-    label: 'Published Today',
-    value: 5,
-    color: 'green',
-    icon: `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-  },
-];
 </script>
 
 <template>
@@ -445,7 +415,7 @@ const stats = [
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
                   <StatCard
-                    v-for="stat in stats"
+                    v-for="stat in props.stats"
                     :key="stat.label"
                     :icon="stat.icon"
                     :label="stat.label"
