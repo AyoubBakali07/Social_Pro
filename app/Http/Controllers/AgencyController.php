@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use Illuminate\Http\Request;
 use App\Http\Requests\AgencyRequest;
+use App\Http\Requests\PostRequest;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Post;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AgencyController extends Controller
 {
@@ -40,7 +42,7 @@ class AgencyController extends Controller
         return response()->json(null, 204);
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $user = Auth::user();
         $agency = Agency::where('user_id', $user->id)->first();
@@ -55,25 +57,35 @@ class AgencyController extends Controller
             ->whereDate('created_at', now()->toDateString())
             ->count();
         $rejectedPosts = Post::where('agency_id', $agency->id)->where('status', 'rejected')->count();
-        $posts = Post::with('client')
-            ->where('agency_id', $agency->id)
-            ->whereNotNull('scheduleDate') // Only include posts with a scheduled date
+        $posts = Post::where('agency_id', $agency->id)
+            ->with('client') // Eager load client
             ->get()
             ->map(function ($post) {
+                // Ensure media is an array of full URLs with forward slashes
+                $mediaUrls = collect($post->media)
+                    ->filter()
+                    ->map(function ($path) {
+                        $fixedPath = str_replace('\\', '/', $path);
+                        return Storage::url($fixedPath);
+                    })->all();
+
                 return [
                     'id' => $post->id,
                     'content' => $post->content,
-                    'media' => $post->media,
-                    'scheduleDate' => $post->scheduleDate ? \Carbon\Carbon::parse($post->scheduleDate)->toIso8601String() : null,
+                    'scheduleDate' => $post->scheduleDate->toIso8601String(),
                     'platform' => $post->platform,
-                    'postType' => $post->postType, // Ensure this matches your database column
+                    'postType' => $post->postType,
                     'status' => $post->status,
                     'feedback' => $post->feedback,
-                    'client' => $post->client ? $post->client->company_name : null,
+                    'client' => $post->client->company_name,
+                    'media' => $mediaUrls, // Use the new array of full URLs
                     'created_at' => $post->created_at->toIso8601String(),
                 ];
             });
-        $clients = Client::where('agency_id', $agency->id)->get(['id', 'company_name']);
+
+        // Get a list of clients for the schedule post form
+        $clients = Client::where('agency_id', $agency->id)->select('id', 'company_name')->get();
+
         return Inertia::render('Agency/Dashboard', [
             'stats' => [
                 [
@@ -112,7 +124,7 @@ class AgencyController extends Controller
         ]);
     }
 
-    public function clientStats()
+    public function clientStats(Request $request)
     {
         $user = Auth::user();
         $agency = Agency::where('user_id', $user->id)->first();
@@ -164,59 +176,36 @@ class AgencyController extends Controller
         ]);
     }
 
-    public function storePost(Request $request)
+    public function storePost(PostRequest $request)
     {
-        try {
-            $validated = $request->validate([
-                'content' => 'required|string',
-                'media' => 'nullable|array',
-                'media.*' => 'file|mimes:jpg,jpeg,png,gif,mov,mp4,avi|max:20480', // 20MB Max
-                'scheduleDate' => 'required|date',
-                'platform' => 'required|string',
-                'postType' => 'required|string',
-                'client_id' => 'required|exists:clients,id',
-                'status' => 'required|string',
-                'feedback' => 'nullable|string',
-            ]);
+        $validated = $request->validated();
 
-            $user = auth()->user();
-            $agency = $user->agency;
-
-            if (!$agency) {
-                return redirect()->back()->withErrors(['agency' => 'No agency found for this user.'])->withInput();
-            }
-
-            $mediaPaths = [];
-            if ($request->hasFile('media')) {
-                foreach ($request->file('media') as $file) {
-                    $path = $file->store('posts/media', 'public');
-                    $mediaPaths[] = $path;
-                }
-            }
-
-            $post = Post::create([
-                'agency_id' => $agency->id,
-                'client_id' => $validated['client_id'],
-                'content' => $validated['content'],
-                'media' => json_encode($mediaPaths), // store as JSON if column is text
-                'scheduleDate' => $validated['scheduleDate'],
-                'platform' => $validated['platform'],
-                'postType' => $validated['postType'],
-                'status' => $validated['status'],
-                'feedback' => $validated['feedback'] ?? null,
-            ]);
-
-            // Optionally eager load client for dashboard
-            $post->load('client');
-
-            // Redirect back with success message for Inertia
-            return redirect()->back()->with('success', 'Post scheduled successfully!');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Redirect back with validation errors for Inertia
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            \Log::error('Error creating post: ' . $e->getMessage());
-            return redirect()->back()->withErrors(['form' => 'Failed to schedule post: ' . $e->getMessage()])->withInput();
+        $agency = $request->user()->agency;
+        if (!$agency) {
+            return redirect()->back()->with('error', 'User is not associated with an agency.');
         }
+
+        $mediaPaths = [];
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $file) {
+                $mediaPaths[] = $file->store('posts', 'public');
+            }
+        }
+
+        $post = Post::create(array_merge($validated, [
+            'agency_id' => $agency->id,
+            'media' => $mediaPaths,
+        ]));
+
+        $post->load('client');
+
+        // Instead of returning JSON, redirect back with a success message
+        return redirect()->back()->with('success', 'Post scheduled successfully!');
+    }
+
+    public function destroyPost(Post $post)
+    {
+        $post->delete();
+        return redirect()->back()->with('success', 'Post deleted successfully!');
     }
 } 

@@ -1,30 +1,43 @@
 <script setup lang="ts">
-const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, posts: Array<any>, clients: Array<{ id: number; company_name: string }> }>();
-
-import { watch, ref, reactive, computed } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { watch, ref, reactive, computed, onMounted } from 'vue';
+import { router, Head, useForm } from '@inertiajs/vue3';
+import type { EventInput, EventDropArg } from '@fullcalendar/core';
+import { X, Loader2, FileText, Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
-import { EventDropArg } from '@fullcalendar/core';
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import rrulePlugin from '@fullcalendar/rrule'
-// Dialog components
+import type { BreadcrumbItem } from '@/types';
+import FullCalendar from '@fullcalendar/vue3';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import rrulePlugin from '@fullcalendar/rrule';
+
+// Components
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
+import StatCard from '@/components/ui/card/StatCard.vue';
+import ScheduledPostCard from '@/components/ui/ScheduledPostCard.vue';
+import Button from '@/components/ui/button/Button.vue';
+import { useToast, POSITION } from 'vue-toastification';
+const toast = useToast();
 
-// Platform Icons
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next';
-import StatCard from '@/components/ui/card/StatCard.vue'
-import ScheduledPostCard from '@/components/ui/ScheduledPostCard.vue'
+// Types
+interface DashboardProps {
+  stats: Array<{ label: string; value: number; color: string; icon: string }>;
+  posts: Array<any>;
+  clients: Array<{ id: number; company_name: string }>;
+}
 
-// Map platform names to Vue icon components (for modal pill)
+// Component Props
+const props = withDefaults(defineProps<DashboardProps>(), {
+  stats: () => [],
+  posts: () => [],
+  clients: () => []
+});
+
+// Platform Icons and Components
 const platformIconComponents = {
   Facebook,
   Instagram,
@@ -55,18 +68,65 @@ const calendarRef = ref<InstanceType<typeof FullCalendar>>();
 // Modal state and form fields
 const showScheduleModal = ref(false);
 const showEventDetails = ref(false);
-const selectedEvent = ref<any>(null);
+const selectedEvent = ref<CalendarEventData | null>(null);
 
 const form = useForm({
   platform: 'Facebook',
   content: '',
-  media: [] as File[],
   scheduleDate: '',
   client_id: '',
   postType: 'Post',
   status: 'scheduled',
   feedback: ''
 });
+
+const media = ref<File[]>([]);
+const mediaError = ref('');
+
+const submitSchedule = async () => {
+  mediaError.value = '';
+  if (!validateForm()) {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('content', form.content);
+  formData.append('scheduleDate', form.scheduleDate);
+  formData.append('platform', form.platform);
+  formData.append('postType', form.postType);
+  formData.append('client_id', form.client_id);
+  formData.append('status', form.status);
+  formData.append('feedback', form.feedback);
+
+  if (media.value.length > 0) {
+    for (let i = 0; i < media.value.length; i++) {
+      formData.append('media[]', media.value[i]);
+    }
+  }
+
+  await router.post('/agency/posts', formData, {
+    preserveScroll: true,
+    onSuccess: () => {
+      closeScheduleModal();
+      form.reset();
+      media.value = [];
+      router.reload({ only: ['posts'] });
+    },
+    onError: (errors: any) => {
+      console.error('Error scheduling post:', errors);
+      if (errors && typeof errors === 'object') {
+        const errorMessages: Record<string, string> = {};
+        Object.entries(errors).forEach(([key, value]) => {
+          errorMessages[key] = Array.isArray(value) ? value[0] : value;
+        });
+        form.setError(errorMessages);
+        if (errorMessages.media) {
+          mediaError.value = errorMessages.media;
+        }
+      }
+    },
+  });
+};
 
 const validateForm = () => {
   const errors: Record<string, string> = {};
@@ -95,64 +155,6 @@ const validateForm = () => {
   return true;
 };
 
-const submitSchedule = async () => {
-  if (!validateForm()) {
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    const formKeys = Object.keys(form.data()) as Array<keyof ReturnType<typeof form.data>>;
-
-    formKeys.forEach(key => {
-      if (key === 'media') {
-        if (Array.isArray(form.media) && form.media.length > 0) {
-          form.media.forEach((file, index) => {
-            formData.append(`media[${index}]`, file);
-          });
-        }
-      } else if (key === 'scheduleDate' && form.scheduleDate && typeof form.scheduleDate === 'string') {
-        formData.append(key, new Date(form.scheduleDate).toISOString());
-      } else {
-        const value = form[key];
-        if (value !== null && value !== undefined && typeof value !== 'object') {
-          formData.append(key, String(value));
-        }
-      }
-    });
-
-    if (!formData.get('status')) {
-      formData.append('status', 'scheduled');
-    }
-    if (!formData.get('postType')) {
-      formData.append('postType', 'Post');
-    }
-    await form.post('/agency/posts', {
-      forceFormData: true,
-      preserveScroll: true,
-      onSuccess: () => {
-        closeScheduleModal();
-        form.reset();
-        router.reload({ only: ['posts'] });
-      },
-      onError: (errors: any) => {
-        console.error('Error scheduling post:', errors);
-        if (errors && typeof errors === 'object') {
-          const errorMessages: Record<string, string> = {};
-          Object.entries(errors).forEach(([key, value]) => {
-            errorMessages[key] = Array.isArray(value) ? value[0] : value;
-          });
-          form.setError(errorMessages);
-        }
-      },
-    });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    if (typeof error === 'string' || (error && typeof error === 'object' && 'message' in error)) {
-        form.setError('content', (error as any).message);
-    }
-  }
-};
 const platforms = ['Facebook', 'Instagram', 'Twitter', 'TikTok', 'LinkedIn'];
 
 // Computed property for dynamic post types based on selected platform
@@ -174,6 +176,7 @@ function closeScheduleModal() {
 const isDragging = ref(false);
 
 function handleFileUpload(e: Event) {
+  mediaError.value = '';
   const target = e.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
     const files = Array.from(target.files);
@@ -181,17 +184,17 @@ function handleFileUpload(e: Event) {
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
       const maxSize = 10 * 1024 * 1024;
       if (!validTypes.includes(file.type)) {
-        form.setError('media', 'Invalid file type. Only images and videos are allowed.');
+        mediaError.value = 'Invalid file type. Only images and videos are allowed.';
         return false;
       }
       if (file.size > maxSize) {
-        form.setError('media', `File ${file.name} is too large. Maximum size is 10MB.`);
+        mediaError.value = `File ${file.name} is too large. Maximum size is 10MB.`;
         return false;
       }
       return true;
     });
     if (validFiles.length > 0) {
-      form.media = [...(Array.isArray(form.media) ? form.media : []), ...validFiles];
+      media.value = [...media.value, ...validFiles];
     }
   }
   target.value = '';
@@ -210,10 +213,10 @@ function handleFileDrop(e: DragEvent) {
 }
 
 function removeFile(index: number) {
-  if (Array.isArray(form.media) && form.media.length > 0) {
-    const newMedia = [...form.media];
+  if (media.value.length > 0) {
+    const newMedia = [...media.value];
     newMedia.splice(index, 1);
-    form.media = newMedia;
+    media.value = newMedia;
   }
 }
 
@@ -288,11 +291,46 @@ function getTextPreview(text: string, maxLength = 40) {
   return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
 }
 
+// Add this function to handle post deletion
+const showDeleteConfirm = ref(false);
+const postIdToDelete = ref<string | null>(null);
 
+function deletePost(postId: string) {
+  postIdToDelete.value = postId;
+  showDeleteConfirm.value = true;
+}
 
+function confirmDelete() {
+  if (!postIdToDelete.value) return;
+  router.delete(`/agency/posts/${postIdToDelete.value}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showEventDetails.value = false;
+      showDeleteConfirm.value = false;
+      postIdToDelete.value = null;
+      router.reload({ only: ['posts'] });
+      toast.success('Post deleted successfully!', {
+        position: POSITION.TOP_CENTER,
+        timeout: 4000,
+        icon: '🗑️',
+      });
+    },
+    onError: (err) => {
+      showDeleteConfirm.value = false;
+      postIdToDelete.value = null;
+      toast.error('Failed to delete post.', {
+        position: POSITION.TOP_CENTER,
+        timeout: 5000,
+        icon: '❌',
+      });
+      console.error(err);
+    }
+  });
+}
+
+// Update handleDeleteEvent to call deletePost
 function handleDeleteEvent(eventId: string) {
-  // For now, just log. Integrate with backend later.
-  console.log('Delete event with id:', eventId);
+  deletePost(eventId);
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -302,88 +340,141 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-import type { EventInput } from '@fullcalendar/core';
+// Type for calendar event data
+interface CalendarEventData {
+  id: string; // Changed to string only to match FullCalendar's expectations
+  title: string;
+  start: Date | string | null | undefined;
+  allDay?: boolean;
+  backgroundColor?: string;
+  borderColor?: string;
+  extendedProps: {
+    platform: string;
+    postType: string;
+    content: string;
+    media: string[];
+    client: string;
+    [key: string]: any;
+  };
+  [key: string]: any; // Allow any other properties that FullCalendar might expect
+}
 
-const posts = ref([...props.posts]); // Local posts state
-const errors: Record<string, string[]> = reactive({}); // Use reactive object for errors with string[] values
-
-const events = computed<EventInput[]>(() => {
-  return (posts.value ?? [])
-    .filter(post => !!post.scheduleDate)
+// Format posts for FullCalendar
+const formatCalendarEvents = (posts: any[]): EventInput[] => {
+  if (!Array.isArray(posts)) return [];
+  
+  return posts
+    .filter(post => post != null) // Filter out null/undefined posts
     .map(post => {
-      // Defensive: fallback for platform/postType
-      const platform = typeof post.platform === 'string' ? post.platform : '';
-      const postType = typeof post.postType === 'string' ? post.postType : '';
-      let backgroundColor = '#2563eb';
-      let borderColor = '#2563eb';
-      if (platform === 'Facebook') {
-        backgroundColor = '#1877F2'; borderColor = '#1877F2';
-      } else if (platform === 'Instagram') {
-        backgroundColor = '#E4405F'; borderColor = '#E4405F';
-      } else if (platform === 'Twitter') {
-        backgroundColor = '#1DA1F2'; borderColor = '#1DA1F2';
-      } else if (platform === 'LinkedIn') {
-        backgroundColor = '#0077B5'; borderColor = '#0077B5';
-      }
-      // Defensive: coerce scheduleDate to string
-      const scheduleDateStr = post.scheduleDate ? String(post.scheduleDate) : '';
-      const allDay = scheduleDateStr.length > 0 && scheduleDateStr.length <= 10;
-      // Defensive: fallback for eventDate
-      let eventDate = new Date().toISOString();
-      if (scheduleDateStr) {
-        try {
-          eventDate = new Date(scheduleDateStr).toISOString();
-        } catch {}
-      }
+      const platform = post.platform || 'Unknown';
+      const backgroundColor = getPlatformColor(platform);
+      
       return {
-        id: String(post.id),
-        title: `${platform ? platform.charAt(0) : ''}${postType ? ' ' + postType : ''}`,
-        start: eventDate,
-        allDay,
+        id: String(post.id), // Ensure ID is a string for FullCalendar
+        title: post.content 
+          ? `${platform}: ${String(post.content).substring(0, 30)}${String(post.content).length > 30 ? '...' : ''}` 
+          : 'No title',
+        start: post.scheduleDate || new Date(),
+        allDay: true,
         backgroundColor,
-        borderColor,
+        borderColor: backgroundColor,
         extendedProps: {
-          content: post.content ?? '',
           platform,
-          postType,
-          client: post.client ?? '',
-          media: post.media ?? [],
-          feedback: post.feedback ?? '',
-          status: post.status ?? '',
-          created_at: post.created_at ?? '',
+          postType: post.post_type || 'Post',
+          content: post.content || '',
+          media: Array.isArray(post.media) 
+            ? post.media 
+            : (post.media ? [post.media] : []),
+          client: post.client?.company_name || 'No client',
+          ...post
         }
-      };
+      } as EventInput;
     });
+};
+
+// Watch for posts changes and log them
+watch(() => props.posts, (newPosts) => {
+  console.log('Posts updated, count:', newPosts?.length || 0);
+  
+  // Update local posts ref when props.posts changes
+  if (newPosts) {
+    // posts.value = [...newPosts]; // This line was removed as per the edit hint
+    
+    // Log calendar events after update
+    if (calendarRef.value) {
+      const calendarApi = calendarRef.value.getApi();
+      const events = calendarApi.getEvents();
+      console.log('Current calendar events:', events.map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        start: e.start,
+        extendedProps: e.extendedProps
+      })));
+    }
+  }
+}, { immediate: true, deep: true });
+
+// Initialize with empty array if props.posts is undefined
+const events = computed<EventInput[]>(() => {
+  try {
+    // Ensure we have valid posts data
+    if (!Array.isArray(props.posts)) {
+      console.warn('Posts data is not an array:', props.posts);
+      return [];
+    }
+    
+    const formattedEvents = formatCalendarEvents(props.posts);
+    console.log('Formatted events:', formattedEvents);
+    return formattedEvents;
+  } catch (error) {
+    console.error('Error formatting calendar events:', error);
+    return [];
+  }
 });
 
-// Add this watcher to debug calendar events
-// watch(events, (newEvents) => {
-//   console.log('Computed events:', newEvents);
-//   if (calendarRef.value) {
-//     const calendarApi = calendarRef.value.getApi();
-//     console.log('Calendar API events:', calendarApi.getEvents().map(e => ({
-//       id: e.id,
-//       title: e.title,
-//       start: e.start,
-//       allDay: e.allDay
-//     })));
-//   }
-// }, { immediate: true, deep: true });
+// Handle event click
+const handleEventClick = (info: any) => {
+  console.log('Event clicked:', info.event);
+  
+  // Extract the event data safely
+  const event = info.event;
+  selectedEvent.value = {
+    id: event.id,
+    title: event.title,
+    start: event.start,
+    end: event.end,
+    allDay: event.allDay,
+    backgroundColor: event.backgroundColor,
+    borderColor: event.borderColor,
+    extendedProps: {
+      ...event.extendedProps,
+      platform: event.extendedProps?.platform || 'Unknown',
+      postType: event.extendedProps?.postType || 'Post',
+      content: event.extendedProps?.content || '',
+      media: Array.isArray(event.extendedProps?.media) 
+        ? event.extendedProps.media 
+        : [],
+      client: event.extendedProps?.client || 'No client'
+    }
+  };
+  
+  showEventDetails.value = true;
+  info.jsEvent.preventDefault();
+}
 
-// watch(events, (val) => {
-//   console.log('FullCalendar events.value:', JSON.stringify(val, null, 2));
-// }, { immediate: true });
-
+// Initialize calendar with debug logging
 const calendarOptions = reactive({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
   initialView: 'dayGridMonth',
   editable: true,
+  eventClick: handleEventClick,
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
     right: 'dayGridMonth,dayGridWeek,dayGridDay'
   },
   eventContent: function(arg: any) {
+    if (!arg?.event) return null;
     const postType = arg.event.extendedProps?.postType?.toLowerCase() || '';
     let icon = '';
     let pillBg = '';
@@ -420,14 +511,19 @@ const calendarOptions = reactive({
       label += ` - ${client.slice(0, 5) +'...'}`;
     }
     // Media preview
-    const mediaList = arg.event.extendedProps?.mediaList || [];
+    const mediaList = arg.event.extendedProps?.media || [];
     let mediaHtml = '';
-    if (mediaList.length) {
-      const first = mediaList[0];
-      if (first.type.startsWith('image')) {
-        mediaHtml = `<div class='w-full aspect-square mb-1'><img src='${first.url}' class='w-full h-full object-cover rounded border' style='aspect-ratio:1/1;'/></div>`;
-      } else if (first.type.startsWith('video')) {
-        mediaHtml = `<div class='w-full aspect-square mb-1'><video src='${first.url}' class='w-full rounded border' style='aspect-ratio:1/1;' muted></video></div>`;
+    if (mediaList.length > 0) {
+      const firstMedia = mediaList[0];
+      const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia.url;
+      
+      const isImage = /\.(jpe?g|png|gif)$/i.test(mediaUrl);
+      const isVideo = /\.(mp4|mov|webm)$/i.test(mediaUrl);
+
+      if (isImage) {
+        mediaHtml = `<div class='w-full aspect-square mb-1'><img src='${mediaUrl}' class='w-full h-full object-cover rounded border' style='aspect-ratio:1/1;'/></div>`;
+      } else if (isVideo) {
+        mediaHtml = `<div class='w-full aspect-square mb-1'><video src='${mediaUrl}' class='w-full rounded border' style='aspect-ratio:1/1;' muted></video></div>`;
       }
     }
     // Time preview
@@ -463,16 +559,11 @@ const calendarOptions = reactive({
     // alert(`Event moved to ${info.event.startStr}`);
     // You can also update your backend or local state here.
   },
-  // Add event click handler for debugging
-  eventClick: function(info: any) {
-    selectedEvent.value = info.event;
-    showEventDetails.value = true;
-  },
-  // Force events to use their individual colors
   eventDidMount: function(info: any) {
+    // Force events to use their individual colors
     if (info.event.backgroundColor) {
       info.el.style.backgroundColor = info.event.backgroundColor;
-      info.el.style.borderColor = info.event.borderColor || info.event.backgroundColor;
+      info.el.style.borderColor = info.event.backgroundColor;
     }
     // Add delete X icon click handler
     const x = info.el.querySelector('.delete-x');
@@ -483,7 +574,7 @@ const calendarOptions = reactive({
       });
     }
   }
-})
+});
 
 function getShortFileName(name: string, maxBase = 10) {
   const dotIdx = name.lastIndexOf('.');
@@ -497,6 +588,32 @@ const mediaCarouselIndex = ref(0);
 watch(showEventDetails, (open) => {
   if (open) mediaCarouselIndex.value = 0;
 });
+
+// Test function to verify modal with mock data
+const testModalWithMockData = () => {
+  const mockEvent: CalendarEventData = {
+    id: 'test-event-123',
+    title: 'Test Event: This is a test post',
+    start: new Date(),
+    allDay: true,
+    backgroundColor: '#3b82f6',
+    borderColor: '#2563eb',
+    extendedProps: {
+      platform: 'Instagram',
+      postType: 'Post',
+      content: 'This is a test post to verify the modal is working correctly. You can safely delete this test event.',
+      media: [
+        'https://source.unsplash.com/random/800x600?social',
+        'https://source.unsplash.com/random/800x600?media'
+      ],
+      client: 'Test Client Inc.'
+    }
+  };
+  
+  selectedEvent.value = mockEvent;
+  showEventDetails.value = true;
+  console.log('Test modal opened with mock data:', mockEvent);
+};
 
 // Add these computed properties in <script setup lang="ts">
 
@@ -524,6 +641,34 @@ const formattedSchedule = computed(() => {
   });
 });
 
+// Helper function to format dates
+const formatDate = (date: Date | string | null | undefined): string => {
+  if (!date) return 'No date';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// Helper function to get platform icon
+const getPlatformIcon = (platform: string) => {
+  const icons: Record<string, any> = {
+    'facebook': 'Facebook',
+    'instagram': 'Instagram',
+    'twitter': 'Twitter',
+    'tiktok': 'Music2',
+    'linkedin': 'Linkedin',
+    'youtube': 'Youtube',
+    'pinterest': 'Pinterest'
+  };
+  
+  return icons[platform.toLowerCase()] || 'FileText';
+};
 </script>
 
 <template>
@@ -542,7 +687,7 @@ const formattedSchedule = computed(() => {
                     <h2 class="text-2xl font-semibold mb-2">Agency Dashboard</h2>
                     <p class="text-sm text-muted-foreground">Manage your clients and social media campaigns</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 w-full mb-8">
                   <StatCard
                     v-for="stat in props.stats"
                     :key="stat.label"
@@ -690,12 +835,12 @@ const formattedSchedule = computed(() => {
                 />
               </div>
               <!-- Preview of selected files -->
-              <div v-if="form.media && form.media.length > 0" class="mt-4">
+              <div v-if="media && media.length > 0" class="mt-4">
                 <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Selected files ({{ form.media.length }})
+                  Selected files ({{ media.length }})
                 </div>
                 <div class="space-y-2">
-                  <div v-for="(file, index) in form.media" :key="index" class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                  <div v-for="(file, index) in media" :key="index" class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
                     <div class="flex items-center space-x-2">
                       <svg v-if="file.type.startsWith('image/')" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -720,8 +865,8 @@ const formattedSchedule = computed(() => {
                 </div>
               </div>
             </div>
-            <div v-if="form.errors.media" class="text-xs text-red-500 mt-1">
-              {{ Array.isArray(form.errors.media) ? form.errors.media.join(', ') : form.errors.media }}
+            <div v-if="mediaError" class="text-xs text-red-500 mt-1">
+              {{ mediaError }}
             </div>
           </div>
           <div>
@@ -787,23 +932,223 @@ const formattedSchedule = computed(() => {
     </Dialog>
     
     <!-- Event Details Modal -->
-    <Dialog v-model:open="showEventDetails">
-      <DialogContent class="max-w-lg w-full p-0 bg-gray-50 rounded-2xl max-h-[85vh] overflow-y-auto">
-        <div class="flex flex-col gap-4 p-6">
-          <ScheduledPostCard
-            :platform="selectedEvent?.extendedProps?.platform"
-            :postType="selectedEvent?.extendedProps?.postType"
-            :scheduledFor="selectedEvent?.start"
-            :media="selectedEvent?.extendedProps?.mediaList || []"
-            :content="selectedEvent?.extendedProps?.content"
-            :client="selectedEvent?.extendedProps?.client"
-          />
+    <Dialog v-model:open="showEventDetails" @update:open="(val) => showEventDetails = val">
+      <DialogContent 
+        class="max-w-lg w-full p-0 bg-white dark:bg-gray-800 rounded-2xl max-h-[90vh] overflow-y-auto"
+        :class="{ 'opacity-100': showEventDetails }"
+      >
+        <DialogTitle class="sr-only">Event Details</DialogTitle>
+        <DialogDescription class="sr-only">Details about the selected event.</DialogDescription>
+        <div v-if="selectedEvent" class="flex flex-col gap-4 p-6 relative">
+          <!-- Close Button -->
+          <button 
+            @click="showEventDetails = false"
+            class="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Close"
+          >
+            <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <!-- Event Header -->
+          <div class="flex items-center gap-3 mb-4">
+            <div 
+              class="w-10 h-10 rounded-full flex items-center justify-center"
+              :style="{ backgroundColor: `${selectedEvent.backgroundColor}20`, border: `2px solid ${selectedEvent.borderColor || selectedEvent.backgroundColor}` }"
+            >
+              <component 
+                :is="getPlatformIcon(selectedEvent.extendedProps?.platform || '') || 'FileText'" 
+                class="h-5 w-5"
+                :style="{ color: selectedEvent.borderColor || selectedEvent.backgroundColor }"
+              />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ selectedEvent.title || 'Post Details' }}
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ formatDate(selectedEvent.start) }}
+              </p>
+            </div>
+          </div>
+          
+          <!-- Post Content -->
+          <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-4">
+            <p class="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
+              {{ selectedEvent.extendedProps?.content || 'No content available' }}
+            </p>
+          </div>
+          
+          <!-- Media Preview -->
+          <div v-if="selectedEvent.extendedProps?.media?.length" class="mb-4">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Media</h4>
+            <div class="flex flex-wrap justify-center items-center gap-4">
+              <div 
+                v-for="(media, index) in selectedEvent.extendedProps.media.slice(0, 4)" 
+                :key="index"
+                class="relative flex flex-col items-center justify-center rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
+                style="max-width: 420px; width: 100%;"
+              >
+                <template v-if="/\.(jpe?g|png|gif)$/i.test(media)">
+                  <img 
+                    :src="media" 
+                    :alt="`Media ${index + 1}`"
+                    class="w-full max-w-[420px] rounded-lg object-contain"
+                    style="max-height: 340px;"
+                  />
+                </template>
+                <template v-else-if="/\.(mp4|mov|webm)$/i.test(media)">
+                  <video 
+                    :src="media" 
+                    controls
+                    class="w-full max-w-[420px] rounded-lg object-contain"
+                    style="min-height: 280px; min-width: 320px; max-height: 420px; background: #000;"
+                  ></video>
+                </template>
+                <template v-else>
+                  <span>Unsupported media type</span>
+                </template>
+                <div 
+                  v-if="index === 3 && selectedEvent.extendedProps.media.length > 4"
+                  class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-medium"
+                >
+                  +{{ selectedEvent.extendedProps.media.length - 4 }} more
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Metadata -->
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500 dark:text-gray-400">Platform</p>
+              <p class="font-medium">{{ selectedEvent.extendedProps?.platform || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500 dark:text-gray-400">Post Type</p>
+              <p class="font-medium capitalize">{{ (selectedEvent.extendedProps?.postType || 'post').toLowerCase() }}</p>
+            </div>
+            <div v-if="selectedEvent.extendedProps?.client">
+              <p class="text-gray-500 dark:text-gray-400">Client</p>
+              <p class="font-medium">{{ selectedEvent.extendedProps.client }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500 dark:text-gray-400">Status</p>
+              <p class="font-medium">Scheduled</p>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+            <Button 
+              variant="outline" 
+              @click="showEventDetails = false"
+              class="px-4"
+            >
+              Close
+            </Button>
+            <Button 
+              variant="destructive"
+              @click="handleDeleteEvent(selectedEvent.id as string)"
+              class="px-4"
+            >
+              Delete
+            </Button>
+          </div>
         </div>
+        
+        <!-- Loading State -->
+        <div v-else class="flex items-center justify-center p-12">
+          <svg class="h-8 w-8 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      </DialogContent>
+    </Dialog>
+    
+    <!-- Test Button (Remove in production) -->
+    <button 
+      @click="testModalWithMockData"
+      class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-full shadow-lg z-50 flex items-center gap-2 transition-colors"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>
+      Test Modal
+    </button>
+
+    <Dialog v-model:open="showDeleteConfirm">
+      <DialogContent class="max-w-sm w-full">
+        <DialogHeader>
+          <DialogTitle>Confirm Deletion</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this post?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="mt-4 flex justify-end gap-3">
+          <Button @click="showDeleteConfirm = false">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 </template>
 
-<style>
+<style scoped>
+/* FullCalendar styles */
+.fc {
+  min-height: 600px;
+}
+
+.fc-event {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+}
+
+.fc-event:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dialog/Modal styles */
+[data-radix-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-radix-dialog-content] {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 32rem;
+  max-height: 85vh;
+  padding: 0;
+  z-index: 100;
+  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes overlayShow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes contentShow {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 /* FullCalendar button style overrides for modern, accessible UI */
 .fc .fc-button, .fc .fc-button-primary {
   background-color: #fff !important;

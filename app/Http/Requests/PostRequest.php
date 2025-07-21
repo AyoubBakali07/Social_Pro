@@ -14,10 +14,10 @@ class PostRequest extends FormRequest
     public function rules()
     {
         return [
-            'agency_id' => 'required|exists:agencies,id',
             'client_id' => 'required|exists:clients,id',
             'content' => 'required|string',
-            'media' => 'nullable|string',
+            'media' => 'nullable|array',
+            'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,mov|max:20480', // 20MB
             'scheduleDate' => 'required|date',
             'platform' => 'required|string',
             'postType' => 'required|string',

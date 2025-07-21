@@ -13,6 +13,8 @@ Route::get('/agency/client', [\App\Http\Controllers\AgencyController::class, 'cl
 
 Route::post('/agency/posts', [\App\Http\Controllers\AgencyController::class, 'storePost'])->middleware(['auth', 'verified']);
 
+Route::delete('/agency/posts/{post}', [\App\Http\Controllers\AgencyController::class, 'destroyPost'])->middleware(['auth', 'verified']);
+
 Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('admin.dashboard');
 
 Route::get('/client/dashboard', [\App\Http\Controllers\ClientController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('client.dashboard');

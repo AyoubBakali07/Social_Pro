@@ -49,7 +49,15 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // return to_route('dashboard');
+        if ($user->role === 'admin') {
+            return redirect(route('admin.dashboard'));
+        } elseif ($user->role === 'agency') {
+            return redirect(route('agency.dashboard'));
+        } elseif ($user->role === 'client') {
+            return redirect(route('client.dashboard'));
+        }
+
+        return redirect(route('home'));
         if ($user->role === 'client') {
             return redirect()->route('client.dashboard');
         } elseif ($user->role === 'agency') {
