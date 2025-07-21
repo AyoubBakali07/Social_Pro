@@ -54,6 +54,7 @@ class AgencyController extends Controller
             ->where('status', 'published')
             ->whereDate('created_at', now()->toDateString())
             ->count();
+        $rejectedPosts = Post::where('agency_id', $agency->id)->where('status', 'rejected')->count();
         $posts = Post::with('client')
             ->where('agency_id', $agency->id)
             ->whereNotNull('scheduleDate') // Only include posts with a scheduled date
@@ -98,6 +99,12 @@ class AgencyController extends Controller
                     'value' => $publishedToday,
                     'color' => 'green',
                     'icon' => '<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+                ],
+                [
+                    'label' => 'Rejected Posts',
+                    'value' => $rejectedPosts,
+                    'color' => 'red',
+                    'icon' => '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
                 ],
             ],
             'posts' => $posts,

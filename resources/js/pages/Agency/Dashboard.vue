@@ -68,16 +68,6 @@ const form = useForm({
   feedback: ''
 });
 
-form.resetOnSuccess = false;
-form.onSuccess = () => {
-  closeScheduleModal();
-  form.reset();
-  router.reload({ only: ['posts'] });
-};
-form.onError = (errors: any) => {
-  console.error('Form submission error:', errors);
-};
-
 const validateForm = () => {
   const errors: Record<string, string> = {};
 
@@ -112,7 +102,9 @@ const submitSchedule = async () => {
 
   try {
     const formData = new FormData();
-    Object.keys(form).forEach(key => {
+    const formKeys = Object.keys(form.data()) as Array<keyof ReturnType<typeof form.data>>;
+
+    formKeys.forEach(key => {
       if (key === 'media') {
         if (Array.isArray(form.media) && form.media.length > 0) {
           form.media.forEach((file, index) => {
@@ -121,10 +113,14 @@ const submitSchedule = async () => {
         }
       } else if (key === 'scheduleDate' && form.scheduleDate && typeof form.scheduleDate === 'string') {
         formData.append(key, new Date(form.scheduleDate).toISOString());
-      } else if (form[key] !== null && form[key] !== undefined && typeof form[key] !== 'object') {
-        formData.append(key, String(form[key]));
+      } else {
+        const value = form[key];
+        if (value !== null && value !== undefined && typeof value !== 'object') {
+          formData.append(key, String(value));
+        }
       }
     });
+
     if (!formData.get('status')) {
       formData.append('status', 'scheduled');
     }
@@ -152,7 +148,9 @@ const submitSchedule = async () => {
     });
   } catch (error) {
     console.error('Unexpected error:', error);
-    form.setError({ form: 'An unexpected error occurred. Please try again.' });
+    if (typeof error === 'string' || (error && typeof error === 'object' && 'message' in error)) {
+        form.setError('content', (error as any).message);
+    }
   }
 };
 const platforms = ['Facebook', 'Instagram', 'Twitter', 'TikTok', 'LinkedIn'];
@@ -359,22 +357,22 @@ const events = computed<EventInput[]>(() => {
 });
 
 // Add this watcher to debug calendar events
-watch(events, (newEvents) => {
-  console.log('Computed events:', newEvents);
-  if (calendarRef.value) {
-    const calendarApi = calendarRef.value.getApi();
-    console.log('Calendar API events:', calendarApi.getEvents().map(e => ({
-      id: e.id,
-      title: e.title,
-      start: e.start,
-      allDay: e.allDay
-    })));
-  }
-}, { immediate: true, deep: true });
+// watch(events, (newEvents) => {
+//   console.log('Computed events:', newEvents);
+//   if (calendarRef.value) {
+//     const calendarApi = calendarRef.value.getApi();
+//     console.log('Calendar API events:', calendarApi.getEvents().map(e => ({
+//       id: e.id,
+//       title: e.title,
+//       start: e.start,
+//       allDay: e.allDay
+//     })));
+//   }
+// }, { immediate: true, deep: true });
 
-watch(events, (val) => {
-  console.log('FullCalendar events.value:', JSON.stringify(val, null, 2));
-}, { immediate: true });
+// watch(events, (val) => {
+//   console.log('FullCalendar events.value:', JSON.stringify(val, null, 2));
+// }, { immediate: true });
 
 const calendarOptions = reactive({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
@@ -617,7 +615,7 @@ const formattedSchedule = computed(() => {
                     {{ platform === 'TikTok' ? '🎵' : '' }}
                   </span>
                 </div>
-                <span class="text-xs font-medium">{{ platformConfig[platform]?.shortName || platform }}</span>
+                <span class="text-xs font-medium">{{ (platformConfig as any)[platform]?.shortName || platform }}</span>
               </button>
             </div>
             <div v-if="form.errors.platform" class="text-xs text-red-500 mt-1">{{ form.errors.platform }}</div>
@@ -670,7 +668,11 @@ const formattedSchedule = computed(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  <button type="button" class="text-blue-600 hover:text-blue-500">
+                  <button 
+                    type="button"
+                    @click="triggerFileInput"
+                    class="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
                     Upload files
                   </button>
                   or drag and drop
