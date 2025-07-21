@@ -542,7 +542,7 @@ const calendarOptions = reactive({
     const pillColor = eventPlatform && platformPillColors[eventPlatform as keyof typeof platformPillColors] ? platformPillColors[eventPlatform as keyof typeof platformPillColors] : 'bg-gray-100 text-gray-800';
     return {
       html: `
-        <div class="fc-event-card relative rounded-xl border border-gray-200 p-2 flex flex-col items-start w-full group cursor-pointer">
+        <div class="fc-event-card relative rounded-xl border border-gray-200 p-2 flex flex-col items-start w-full group cursor-pointer" style="background:#fff;">
           ${xIcon}
           ${timeHtml}
           <span class="inline-flex items-center gap-1 mb-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pillColor}">
@@ -727,7 +727,7 @@ const getPlatformIcon = (platform: string) => {
 
     <!-- Schedule Post Modal -->
     <Dialog v-model:open="showScheduleModal">
-      <DialogContent class="max-w-lg w-full">
+      <DialogContent class="sm:max-w-md max-w-md w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Schedule New Post</DialogTitle>
           <DialogDescription>
@@ -934,7 +934,7 @@ const getPlatformIcon = (platform: string) => {
     <!-- Event Details Modal -->
     <Dialog v-model:open="showEventDetails" @update:open="(val) => showEventDetails = val">
       <DialogContent 
-        class="max-w-lg w-full p-0 bg-white dark:bg-gray-800 rounded-2xl max-h-[90vh] overflow-y-auto"
+        class="sm:max-w-md max-w-md w-full p-0 bg-white dark:bg-gray-800 rounded-2xl max-h-[90vh] overflow-y-auto"
         :class="{ 'opacity-100': showEventDetails }"
       >
         <DialogTitle class="sr-only">Event Details</DialogTitle>
@@ -1101,11 +1101,15 @@ const getPlatformIcon = (platform: string) => {
   min-height: 600px;
 }
 
+.fc-event-main,
 .fc-event {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 2px 4px;
+  background: #fff !important;
+  /* Optionally, remove any box-shadow or border if you want a cleaner look */
+  box-shadow: none !important;
 }
 
 .fc-event:hover {
@@ -1197,5 +1201,20 @@ const getPlatformIcon = (platform: string) => {
 }
 .fc-event-card.group:hover .delete-x {
   display: flex !important;
+}
+.fc-event-card {
+  background: #fff !important;
+}
+.fc-event,
+.fc-event-draggable,
+.fc-event-resizable,
+.fc-event-start,
+.fc-event-end,
+.fc-event-future,
+.fc-daygrid-event,
+.fc-daygrid-block-event,
+.fc-h-event {
+  background: #fff !important;
+  border-color: white;
 }
 </style>

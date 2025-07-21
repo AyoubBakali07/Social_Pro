@@ -57,7 +57,7 @@ function isVideo(url: string) {
     </div>
 
     <!-- Media Preview -->
-    <div v-if="media && media.length" class="mt-4">
+    <div v-if="media && media.length" class="mt-2">
       <div v-for="(mediaUrl, index) in media.filter(Boolean)" :key="index" class="w-full aspect-video rounded-lg overflow-hidden border border-gray-200">
         <img v-if="isImage(mediaUrl)" :src="mediaUrl" alt="Post media" class="w-full h-full object-cover">
         <video v-else-if="isVideo(mediaUrl)" :src="mediaUrl" controls class="w-full h-full object-cover"></video>
@@ -65,14 +65,14 @@ function isVideo(url: string) {
     </div>
 
     <!-- Post Content -->
-    <div v-if="content" class="mt-4">
+    <div v-if="content" class="mt-2">
       <h3 class="text-sm font-semibold text-gray-800 mb-1">
         {{ postType }}
       </h3>
       <p class="text-sm text-gray-700">{{ content }}</p>
     </div>
 
-    <div v-if="client" class="mt-4 text-sm text-gray-600">
+    <div v-if="client" class="mt-2 text-sm text-gray-600">
       <span>Client: {{ client }}</span>
     </div>
   </div>
