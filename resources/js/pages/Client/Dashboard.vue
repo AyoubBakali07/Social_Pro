@@ -55,11 +55,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ]
 
-const stats = [
-  { label: 'Pending Approvals', value: 5, color: 'text-black' },
-  { label: 'Approved This Month', value: 18, color: 'text-green-600' },
-  { label: 'Upcoming Posts', value: 12, color: 'text-blue-600' },
-]
+const props = defineProps<{ stats: Array<{ label: string; value: number|string; color: string; icon: string }> }>();
 
 const pendingApprovals = [
   {
@@ -113,28 +109,12 @@ const calendarOptions = reactive({
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-6">
           <StatCard
-            icon="<svg class='w-6 h-6 text-blue-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'/></svg>"
-            label="Pending Approval"
-            :value="3"
-            color="text-gray-500"
-          />
-          <StatCard
-            icon="<svg class='w-6 h-6 text-green-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>"
-            label="Approved"
-            :value="12"
-            color="text-green-600"
-          />
-          <StatCard
-            icon="<svg class='w-6 h-6 text-yellow-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>"
-            label="In Review"
-            :value="5"
-            color="text-yellow-600"
-          />
-          <StatCard
-            icon="<svg class='w-6 h-6 text-red-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><path d='M15 9l-6 6m0-6l6 6'/></svg>"
-            label="Rejected"
-            :value="2"
-            color="text-red-600"
+            v-for="stat in props.stats"
+            :key="stat.label"
+            :icon="stat.icon"
+            :label="stat.label"
+            :value="stat.value"
+            :color="stat.color"
           />
         </div>
       </div>

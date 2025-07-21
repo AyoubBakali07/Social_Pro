@@ -165,3 +165,11 @@
         @apply bg-background text-foreground;
     }
 }
+
+.fc-event,
+.fc-event.fc-h-event,
+.fc-event.fc-daygrid-event,
+.fc-event.fc-daygrid-block-event {
+  background: #fff !important;
+  border-color: #fff !important;
+}

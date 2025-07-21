@@ -14,33 +14,10 @@ import StatCard from '@/components/ui/card/StatCard.vue'
 import GenericTable from '@/components/ui/GenericTable.vue'
 
 const search = ref('')
-const clients = ref([
-  {
-    name: 'Sarah Johnson',
-    email: 'sarah@example.com',
-    status: 'Active',
-    pendingPosts: 3,
-    joined: '1/15/2024',
-  },
-  {
-    name: 'Mike Chen',
-    email: 'mike@techcorp.com',
-    status: 'Active',
-    pendingPosts: 1,
-    joined: '2/1/2024',
-  },
-  {
-    name: 'Emma Davis',
-    email: 'emma@startup.co',
-    status: 'Inactive',
-    pendingPosts: 0,
-    joined: '1/20/2024',
-  },
-])
 
 const filteredClients = computed(() => {
-  if (!search.value) return clients.value
-  return clients.value.filter(client =>
+  if (!search.value) return props.clients
+  return props.clients.filter(client =>
     client.name.toLowerCase().includes(search.value.toLowerCase()) ||
     client.email.toLowerCase().includes(search.value.toLowerCase())
   )
@@ -50,32 +27,7 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase()
 }
 
-const stats = [
-  {
-    label: 'Total Clients',
-    value: 3,
-    color: 'blue',
-    icon: `<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>`,
-  },
-  {
-    label: 'Active',
-    value: 2,
-    color: 'green',
-    icon: `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>`,
-  },
-  {
-    label: 'Pending',
-    value: 4,
-    color: 'yellow',
-    icon: `<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
-  },
-  {
-    label: 'Inactive',
-    value: 1,
-    color: 'red',
-    icon: `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
-  },
-];
+const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, clients: Array<any> }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -154,7 +106,7 @@ const columns = [
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
           <StatCard
-            v-for="stat in stats"
+            v-for="stat in props.stats"
             :key="stat.label"
             :icon="stat.icon"
             :label="stat.label"

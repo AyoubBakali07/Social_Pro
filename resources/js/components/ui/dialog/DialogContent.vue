@@ -9,7 +9,7 @@ import {
   DialogPortal,
   useForwardPropsEmits,
 } from 'reka-ui'
-import { computed, type HTMLAttributes } from 'vue'
+import { computed, type HTMLAttributes, reactive } from 'vue'
 import DialogOverlay from './DialogOverlay.vue'
 
 const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class'] }>()
@@ -21,7 +21,7 @@ const delegatedProps = computed(() => {
   return delegated
 })
 
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const forwarded = useForwardPropsEmits(reactive(delegatedProps.value), emits)
 </script>
 
 <template>
