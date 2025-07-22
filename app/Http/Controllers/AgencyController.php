@@ -195,6 +195,7 @@ class AgencyController extends Controller
         $post = Post::create(array_merge($validated, [
             'agency_id' => $agency->id,
             'media' => $mediaPaths,
+            'status' => 'pending',
         ]));
 
         $post->load('client');

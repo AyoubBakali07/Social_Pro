@@ -21,7 +21,7 @@ class PostSeeder extends Seeder
                     'scheduleDate' => now()->addDays(rand(1, 30)),
                     'platform' => fake()->randomElement(['facebook', 'twitter', 'instagram']),
                     'postType' => fake()->randomElement(['image', 'video', 'text']),
-                    'status' => fake()->randomElement(['draft', 'scheduled', 'published', 'approved', 'rejected']),
+                    'status' => fake()->randomElement(['pending', 'scheduled', 'published', 'approved', 'rejected']),
                     'feedback' => null,
                 ]);
             }

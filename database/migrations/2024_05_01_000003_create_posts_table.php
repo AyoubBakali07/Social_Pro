@@ -17,7 +17,7 @@ return new class extends Migration
             $table->dateTime('scheduleDate');
             $table->string('platform');
             $table->string('postType');
-            $table->enum('status', ['draft', 'scheduled', 'published', 'approved', 'rejected']);
+            $table->enum('status', ['pending', 'scheduled', 'published', 'approved', 'rejected']);
             $table->text('feedback')->nullable();
             $table->timestamps();
         });
