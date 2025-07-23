@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -25,5 +26,27 @@ Route::get('/client/calendar', function () {
 
 Route::get('/admin/agencies', [\App\Http\Controllers\AdminController::class, 'agencies'])->middleware(['auth', 'verified'])->name('admin.agencies');
 
-require __DIR__.'/settings.php';
+// Client invitation and setup routes
+Route::middleware('auth')->group(function () {
+    // Agency routes for managing clients
+    Route::post('/agency/clients', [\App\Http\Controllers\AgencyController::class, 'storeClient'])
+        ->name('agency.clients.store')
+        ->middleware(['auth', 'verified']);
+});
+
+// Client password setup routes (no auth required as these are for new users)
+Route::get('/setup-password/{token}', [\App\Http\Controllers\Auth\SetupPasswordController::class, 'create'])
+    ->name('password.setup');
+
+Route::post('/setup-password', [\App\Http\Controllers\Auth\SetupPasswordController::class, 'store'])
+    ->name('password.setup.store');
+
+    Route::get('/test-email', function (){
+        Mail::raw('This is a test email', function ($message) {
+            $message->to('ayoubbakali817@gmail.com')
+                    ->subject('Test Email');
+        });
+        return 'Email sent!';
+    });
+    require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

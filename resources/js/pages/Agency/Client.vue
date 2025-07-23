@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
+import { useToast, POSITION } from 'vue-toastification'
 import { type BreadcrumbItem } from '@/types'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -27,7 +28,25 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase()
 }
 
-const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, clients: Array<any> }>();
+const toast = useToast()
+
+const props = defineProps<{ 
+  stats: Array<{ 
+    label: string; 
+    value: number; 
+    color: string; 
+    icon: string 
+  }>, 
+  clients: Array<{
+    id: number;
+    name: string;
+    email: string;
+    status: string;
+    pendingPosts: number;
+    joined: string;
+    company_name?: string;
+  }> 
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -77,10 +96,102 @@ function validateAddClientForm() {
   return valid
 }
 
-function submitAddClient() {
-  if (validateAddClientForm()) {
-    // No backend logic yet, just close modal
-    closeAddClientModal()
+const loading = ref<boolean>(false);
+const form = useForm({
+  name: '',
+  email: '',
+  company_name: '',
+  message: ''
+});
+
+async function submitAddClient() {
+  if (!validateAddClientForm()) {
+    return;
+  }
+  
+  loading.value = true;
+  
+  try {
+    // Update form data
+    form.name = addClientForm.value.name;
+    form.email = addClientForm.value.email;
+    form.company_name = addClientForm.value.company;
+    form.message = addClientForm.value.message;
+    
+    // Submit the form using Inertia
+    const options = {
+      onSuccess: () => {
+        closeAddClientModal();
+        // Clear the form
+        form.reset();
+        // Show success message from the backend or default message
+        const successMessage = form.recentlySuccessful && form.wasSuccessful
+          ? form.recentlySuccessful
+          : 'Client invited successfully!';
+          
+        toast.success(successMessage, {
+          position: POSITION.TOP_RIGHT,
+          timeout: 5000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: 'button',
+          icon: true,
+          rtl: false
+        });
+      },
+      onError: (errors: Record<string, string | string[]>) => {
+        // Reset all errors
+        addClientErrors.value = { name: '', email: '', company: '' };
+        
+        // Handle validation errors
+        if (errors.name) addClientErrors.value.name = Array.isArray(errors.name) ? errors.name[0] : errors.name;
+        if (errors.email) addClientErrors.value.email = Array.isArray(errors.email) ? errors.email[0] : errors.email;
+        if (errors.company_name) addClientErrors.value.company = Array.isArray(errors.company_name) ? errors.company_name[0] : errors.company_name;
+        
+        // Show error toast for general errors
+        const errorMessage = errors.message || 'Please fix the errors in the form.';
+        toast.error(errorMessage, {
+          position: POSITION.TOP_RIGHT,
+          timeout: 5000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: 'button',
+          icon: true,
+          rtl: false
+        });
+      },
+      onFinish: () => {
+        loading.value = false;
+      }
+    };
+    
+    await form.post(route('agency.clients.store'), options);
+  } catch (error) {
+    loading.value = false;
+    toast.error('An unexpected error occurred. Please try again.', {
+      position: POSITION.TOP_RIGHT,
+      timeout: 5000,
+      closeOnClick: true,
+      pauseOnFocusLoss: true,
+      pauseOnHover: true,
+      draggable: true,
+      draggablePercent: 0.6,
+      showCloseButtonOnHover: false,
+      hideProgressBar: true,
+      closeButton: 'button',
+      icon: true,
+      rtl: false
+    });
   }
 }
 
@@ -195,7 +306,17 @@ const columns = [
         </div>
         <DialogFooter class="mt-4 flex justify-end gap-3">
           <button type="button" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" @click="closeAddClientModal">Cancel</button>
-          <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">Send Invitation</button>
+          <button 
+            type="submit" 
+            class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed"
+            :disabled="loading"
+          >
+            <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ loading ? 'Sending...' : 'Send Invitation' }}
+          </button>
         </DialogFooter>
       </form>
     </DialogContent>

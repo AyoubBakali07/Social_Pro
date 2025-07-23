@@ -9,8 +9,14 @@ use App\Http\Requests\PostRequest;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreClientUserRequest;
+use App\Notifications\ClientInvitation;
+use Illuminate\Support\Facades\Notification;
 
 class AgencyController extends Controller
 {
@@ -207,6 +213,60 @@ class AgencyController extends Controller
     public function destroyPost(Post $post)
     {
         $post->delete();
-        return redirect()->back()->with('success', 'Post deleted successfully!');
+        return redirect()->back()->with('success', 'Post deleted successfully');
     }
-} 
+
+    /**
+     * Store a newly created client user.
+     *
+     * @param  \App\Http\Requests\StoreClientUserRequest  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function storeClient(StoreClientUserRequest $request)
+    {
+        $user = Auth::user();
+        $agency = Agency::where('user_id', $user->id)->first();
+
+        if (!$agency) {
+            return back()->withErrors([
+                'message' => 'No agency found for this user.'
+            ]);
+        }
+
+        try {
+            // Create the user with a random password
+            $password = Str::random(32);
+            $newUser = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($password),
+                'role' => 'client',
+                'email_verified_at' => null, // Will be verified after setting password
+            ]);
+
+            // Create the client record
+            $client = Client::create([
+                'user_id' => $newUser->id,
+                'agency_id' => $agency->id,
+                'company_name' => $request->company_name,
+                'status' => 'pending',
+            ]);
+
+            // Generate a password reset token
+            $token = app('auth.password.broker')->createToken($newUser);
+
+            // Send the invitation email
+            Notification::send($newUser, new ClientInvitation($token, $agency->name));
+
+            return redirect()->back()->with([
+                'message' => 'Client invited successfully. They will receive an email to set their password.',
+                'success' => true
+            ]);
+            
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'message' => 'An error occurred while creating the client. Please try again.'
+            ]);
+        }
+    }
+}
