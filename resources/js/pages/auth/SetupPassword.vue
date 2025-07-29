@@ -8,6 +8,7 @@
         <p class="text-gray-600">Create a secure password for your account</p>
       </div>
 
+      
       <!-- Success Message -->
       <div v-if="status" class="mb-6 p-4 bg-green-50 text-green-700 rounded-lg text-sm">
         <div class="flex items-center">
@@ -158,7 +159,7 @@
 
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import InputError from '@/components/InputError.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
@@ -237,8 +238,9 @@ const submit = () => {
 const passwordInput = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
-  if (passwordInput.value) {
-    passwordInput.value.focus();
+  const input = document.getElementById('password');
+  if (input) {
+    input.focus();
   }
 });
 </script>
