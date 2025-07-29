@@ -27,7 +27,7 @@ class SetupPasswordController extends Controller
             abort(403, 'The invitation link is invalid or has expired.');
         }
 
-        return Inertia::render('Auth/SetupPassword', [
+        return Inertia::render('auth/SetupPassword', [
             'email' => $request->email,
             'token' => $request->token,
         ]);
