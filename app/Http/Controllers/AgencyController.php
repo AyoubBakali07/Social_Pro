@@ -160,19 +160,19 @@ class AgencyController extends Controller
                     'icon' => '<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>',
                 ],
                 [
-                    'label' => 'Active',
+                    'label' => 'Active Clients',
                     'value' => $activeClients,
                     'color' => 'green',
                     'icon' => '<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>',
                 ],
                 [
-                    'label' => 'Pending',
+                    'label' => 'Pending Clients',
                     'value' => $pendingClients,
                     'color' => 'yellow',
                     'icon' => '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
                 ],
                 [
-                    'label' => 'Inactive',
+                    'label' => 'Inactive Clients',
                     'value' => $inactiveClients,
                     'color' => 'red',
                     'icon' => '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
