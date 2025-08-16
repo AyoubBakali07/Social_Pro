@@ -32,6 +32,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/agency/clients', [\App\Http\Controllers\AgencyController::class, 'storeClient'])
         ->name('agency.clients.store')
         ->middleware(['auth', 'verified']);
+        
+    // Client deactivation route
+    Route::put('/agency/clients/{client}/deactivate', [\App\Http\Controllers\AgencyController::class, 'deactivateClient'])
+        ->name('agency.clients.deactivate')
+        ->middleware(['auth', 'verified']);
+        
+    // Client activation route
+    Route::put('/agency/clients/{client}/activate', [\App\Http\Controllers\AgencyController::class, 'activateClient'])
+        ->name('agency.clients.activate')
+        ->middleware(['auth', 'verified']);
 });
 
 // Client password setup routes (no auth required as these are for new users)

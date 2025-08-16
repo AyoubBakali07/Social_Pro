@@ -47,6 +47,53 @@ class AgencyController extends Controller
         $agency->delete();
         return response()->json(null, 204);
     }
+    
+    /**
+     * Deactivate a client account
+     *
+     * @param  \App\Models\Client  $client
+     * @return \Illuminate\Http\Response
+     */
+    public function deactivateClient(Client $client)
+    {
+        // Verify that the authenticated user is the agency owner
+        if (auth()->id() !== $client->agency->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Update the client's status to inactive
+        $client->update(['status' => 'inactive']);
+        
+        // Optionally, you can also revoke all of the client's tokens
+        $client->user->tokens()->delete();
+        
+        return response()->json([
+            'message' => 'Client deactivated successfully',
+            'client' => $client->fresh()
+        ]);
+    }
+    
+    /**
+     * Activate a client account
+     *
+     * @param  \App\Models\Client  $client
+     * @return \Illuminate\Http\Response
+     */
+    public function activateClient(Client $client)
+    {
+        // Verify that the authenticated user is the agency owner
+        if (auth()->id() !== $client->agency->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Update the client's status to active
+        $client->update(['status' => 'active']);
+        
+        return response()->json([
+            'message' => 'Client activated successfully',
+            'client' => $client->fresh()
+        ]);
+    }
 
     public function dashboard(Request $request)
     {

@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
+import { router, useForm, Head } from '@inertiajs/vue3'
+
+// Type declaration for global route helper
+declare global {
+  interface Window {
+    route: (name: string, params?: Record<string, any>) => string;
+  }
+  const route: Window['route'];
+}
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head, router, useForm } from '@inertiajs/vue3'
 import { useToast, POSITION } from 'vue-toastification'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { type BreadcrumbItem } from '@/types'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -14,14 +23,32 @@ import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import StatCard from '@/components/ui/card/StatCard.vue'
 import GenericTable from '@/components/ui/GenericTable.vue'
 
+// Types
+interface Client {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  pendingPosts?: number;
+  joined?: string;
+  [key: string]: any;
+}
+
+// State
 const search = ref('')
+const showDeactivateDialog = ref(false)
+const selectedClient = ref<Client | null>(null)
+const isDeactivating = ref(false)
 
 const filteredClients = computed(() => {
-  if (!search.value) return props.clients
-  return props.clients.filter(client =>
-    client.name.toLowerCase().includes(search.value.toLowerCase()) ||
-    client.email.toLowerCase().includes(search.value.toLowerCase())
-  )
+  if (!clientsList.value.length) return [];
+  if (!search.value) return clientsList.value;
+  
+  const searchTerm = search.value.toLowerCase();
+  return clientsList.value.filter(client =>
+    (client.name?.toLowerCase() || '').includes(searchTerm) ||
+    (client.email?.toLowerCase() || '').includes(searchTerm)
+  );
 })
 
 function getInitials(name: string) {
@@ -30,23 +57,107 @@ function getInitials(name: string) {
 
 const toast = useToast()
 
-const props = defineProps<{ 
-  stats: Array<{ 
-    label: string; 
-    value: number; 
-    color: string; 
-    icon: string 
-  }>, 
-  clients: Array<{
-    id: number;
-    name: string;
-    email: string;
-    status: string;
-    pendingPosts: number;
-    joined: string;
-    company_name?: string;
-  }> 
-}>();
+// Debug: Log available routes
+try {
+  if (typeof window.route === 'function') {
+    console.log('Available routes:', window.route('agency.clients.index'));
+  } else {
+    console.warn('Route helper is not available yet');
+  }
+} catch (error) {
+  console.error('Error accessing route helper:', error);
+}
+
+// Open deactivation dialog
+const openDeactivateDialog = (client: Client) => {
+  selectedClient.value = client
+  showDeactivateDialog.value = true
+  
+  // Debug: Log the route we're trying to use
+  console.log('Trying to use route:', 'agency.clients.deactivate')
+  console.log('Route URL:', route('agency.clients.deactivate', { client: client.id }))
+}
+
+// Handle client deactivation
+const deactivateClient = async () => {
+  if (!selectedClient.value) {
+    console.error('No client selected for deactivation')
+    toast.error('No client selected for deactivation')
+    showDeactivateDialog.value = false
+    return
+  }
+  
+  isDeactivating.value = true
+  
+  try {
+    console.log('Deactivating client with ID:', selectedClient.value.id)
+    const response = await fetch(`/agency/clients/${selectedClient.value.id}/deactivate`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({})
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    toast.success('Client deactivated successfully')
+    // Refresh the client list
+    router.reload({ only: ['clients'] })
+  } catch (error) {
+    console.error('Deactivation error:', error)
+    toast.error('Failed to deactivate client. Please try again.')
+  } finally {
+    isDeactivating.value = false
+    showDeactivateDialog.value = false
+    selectedClient.value = null
+  }
+}
+
+// Handle client activation
+const activateClient = async (client: Client) => {
+  try {
+    await router.put(route('agency.clients.activate', { client: client.id }), {})
+    toast.success('Client activated successfully')
+    // Refresh the client list
+    router.reload({ only: ['clients'] })
+  } catch (error) {
+    console.error('Activation error:', error)
+    toast.error('Failed to activate client. Please try again.')
+  }
+}
+
+interface StatItem {
+  label: string;
+  value: number;
+  color: string;
+  icon: string;
+}
+
+interface ClientItem {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  pendingPosts: number;
+  joined: string;
+  company_name?: string;
+}
+
+const props = withDefaults(defineProps<{ 
+  stats?: StatItem[];
+  clients?: ClientItem[];
+}>(), {
+  stats: () => [],
+  clients: () => []
+});
+
+// Add reactive references for the props to ensure reactivity
+const statsList = computed<StatItem[]>(() => props.stats || []);
+const clientsList = computed<ClientItem[]>(() => props.clients || []);
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -217,7 +328,7 @@ const columns = [
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
           <StatCard
-            v-for="stat in props.stats"
+            v-for="stat in statsList"
             :key="stat.label"
             :icon="stat.icon"
             :label="stat.label"
@@ -269,14 +380,67 @@ const columns = [
             <span class="text-gray-600">{{ row.joined }}</span>
           </template>
           <template #actions="{ row }">
-            <button class="p-2 rounded-full hover:bg-gray-100">
-              <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="4" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="10" cy="16" r="2"/></svg>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button class="p-2 rounded-full hover:bg-gray-100">
+                  <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="4" r="2"/>
+                    <circle cx="10" cy="10" r="2"/>
+                    <circle cx="10" cy="16" r="2"/>
+                  </svg>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-48" align="end">
+                <DropdownMenuItem 
+                  v-if="row.status.toLowerCase() === 'active'"
+                  @click="openDeactivateDialog(row as Client)"
+                  class="text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Deactivate
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  v-else-if="row.status.toLowerCase() === 'inactive'"
+                  @click="activateClient(row as Client)"
+                  class="text-green-600 hover:bg-green-50 focus:bg-green-50 cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Activate
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </template>
         </GenericTable>
       </div>
     </div>
   </AppLayout>
+  
+  <!-- Deactivate Client Confirmation Dialog -->
+  <Dialog v-model:open="showDeactivateDialog">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Deactivate Client</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to deactivate {{ selectedClient?.name }}? They will no longer have access to their account.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="mt-4 flex justify-end gap-3">
+        <Button variant="outline" @click="showDeactivateDialog = false">Cancel</Button>
+        <Button variant="destructive" @click="deactivateClient" :disabled="isDeactivating">
+          <svg v-if="isDeactivating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isDeactivating ? 'Deactivating...' : 'Deactivate' }}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+  
   <Dialog v-model:open="showAddClientModal">
     <DialogContent class="max-w-lg w-full">
       <DialogHeader>
