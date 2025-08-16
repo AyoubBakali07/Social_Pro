@@ -531,7 +531,7 @@ const calendarOptions = reactive({
       timeHtml = `<span class='block text-xs font-bold text-gray-800 mb-1'>${hours}:${minutes}</span>`;
     }
     // Add X icon for delete (absolute, only on hover)
-    const xIcon = `<span class='absolute top-2 right-2 z-20 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow cursor-pointer delete-x' title='Delete'>
+    const xIcon = `<span class='absolute top-2 right-2 z-20 hidden group-hover:flex items-center justify-center w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded cursor-pointer delete-x transition-colors' title='Delete'>
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
     </span>`;
     const platformIconSvg = eventPlatform && platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] ? platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] : '';
@@ -585,31 +585,7 @@ watch(showEventDetails, (open) => {
   if (open) mediaCarouselIndex.value = 0;
 });
 
-// Test function to verify modal with mock data
-const testModalWithMockData = () => {
-  const mockEvent: CalendarEventData = {
-    id: 'test-event-123',
-    title: 'Test Event: This is a test post',
-    start: new Date(),
-    allDay: true,
-    backgroundColor: '#3b82f6',
-    borderColor: '#2563eb',
-    extendedProps: {
-      platform: 'Instagram',
-      postType: 'Post',
-      content: 'This is a test post to verify the modal is working correctly. You can safely delete this test event.',
-      media: [
-        'https://source.unsplash.com/random/800x600?social',
-        'https://source.unsplash.com/random/800x600?media'
-      ],
-      client: 'Test Client Inc.'
-    }
-  };
-  
-  selectedEvent.value = mockEvent;
-  showEventDetails.value = true;
-  console.log('Test modal opened with mock data:', mockEvent);
-};
+
 
 // Add these computed properties in <script setup lang="ts">
 
@@ -928,30 +904,15 @@ const getPlatformIcon = (platform: string) => {
         <DialogTitle class="sr-only">Event Details</DialogTitle>
         <DialogDescription class="sr-only">Details about the selected event.</DialogDescription>
         <div v-if="selectedEvent" class="flex flex-col gap-4 p-6 relative">
-          <!-- Close Button -->
-          <button 
-            @click="showEventDetails = false"
-            class="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Close"
-          >
-            <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          
           <!-- Event Header -->
           <div class="flex items-center gap-3 mb-4">
             <div 
               class="w-10 h-10 rounded-full flex items-center justify-center"
               :style="{ backgroundColor: `${selectedEvent.backgroundColor}20`, border: `2px solid ${selectedEvent.borderColor || selectedEvent.backgroundColor}` }"
             >
-              <component 
-                :is="getPlatformIcon(selectedEvent.extendedProps?.platform || '') || 'FileText'" 
-                class="h-5 w-5"
-                :style="{ color: selectedEvent.borderColor || selectedEvent.backgroundColor }"
-              />
+              <div v-html="platformIconSvgs[selectedEvent.extendedProps?.platform as keyof typeof platformIconSvgs] || ''" class="w-6 h-6"></div>
             </div>
-            <div>
+            <div class="flex-1">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ selectedEvent.title || 'Post Details' }}
               </h3>
@@ -959,6 +920,15 @@ const getPlatformIcon = (platform: string) => {
                 {{ formatDate(selectedEvent.start) }}
               </p>
             </div>
+            <!-- <button 
+              @click="showEventDetails = false"
+              class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Close"
+            >
+              <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button> -->
           </div>
           
           <!-- Post Content -->
@@ -1011,7 +981,10 @@ const getPlatformIcon = (platform: string) => {
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-gray-500 dark:text-gray-400">Platform</p>
-              <p class="font-medium">{{ selectedEvent.extendedProps?.platform || 'N/A' }}</p>
+              <div class="flex items-center gap-2">
+                <div v-html="platformIconSvgs[selectedEvent.extendedProps?.platform as keyof typeof platformIconSvgs] || ''" class="w-4 h-4"></div>
+                <p class="font-medium">{{ selectedEvent.extendedProps?.platform || 'N/A' }}</p>
+              </div>
             </div>
             <div>
               <p class="text-gray-500 dark:text-gray-400">Post Type</p>
@@ -1029,13 +1002,6 @@ const getPlatformIcon = (platform: string) => {
           
           <!-- Action Buttons -->
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-            <Button 
-              variant="outline" 
-              @click="showEventDetails = false"
-              class="px-4"
-            >
-              Close
-            </Button>
             <Button 
               variant="destructive"
               @click="handleDeleteEvent(selectedEvent.id as string)"
@@ -1056,16 +1022,7 @@ const getPlatformIcon = (platform: string) => {
       </DialogContent>
     </Dialog>
     
-    <!-- Test Button (Remove in production) -->
-    <button 
-      @click="testModalWithMockData"
-      class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-full shadow-lg z-50 flex items-center gap-2 transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-      </svg>
-      Test Modal
-    </button>
+
 
     <Dialog v-model:open="showDeleteConfirm">
       <DialogContent class="max-w-sm w-full">
