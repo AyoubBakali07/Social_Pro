@@ -263,6 +263,25 @@ class AgencyController extends Controller
         return redirect()->back()->with('success', 'Post deleted successfully');
     }
 
+    public function updatePost(Request $request, Post $post)
+    {
+        // Verify that the authenticated user owns the agency that owns this post
+        $user = Auth::user();
+        $agency = $user->agency;
+        
+        if (!$agency || $post->agency_id !== $agency->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Update the schedule date
+        $post->update([
+            'scheduleDate' => $request->scheduleDate,
+        ]);
+
+        // Return a redirect response for Inertia compatibility
+        return redirect()->back()->with('success', 'Post schedule updated successfully');
+    }
+
     /**
      * Store a newly created client user.
      *

@@ -552,8 +552,50 @@ const calendarOptions = reactive({
   },
   eventDrop: function(info: EventDropArg) {
     // Handle the event drop (update your data here)
-    // alert(`Event moved to ${info.event.startStr}`);
-    // You can also update your backend or local state here.
+    const event = info.event;
+    const newDate = event.start;
+    const eventId = event.id;
+    
+    if (newDate && eventId) {
+      // Format the date for the backend
+      const formattedDate = new Date(newDate).toISOString().slice(0, 16);
+      
+      // Show loading state
+      toast.info('Updating post schedule...', {
+        position: POSITION.TOP_CENTER,
+        timeout: 2000,
+        icon: '⏳',
+      });
+      
+      // Update the post date in the database
+      router.put(`/agency/posts/${eventId}`, {
+        scheduleDate: formattedDate
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success('Post schedule updated successfully!', {
+            position: POSITION.TOP_CENTER,
+            timeout: 3000,
+            icon: '✅',
+          });
+          
+          // Refresh the posts data to reflect the change
+          router.reload({ only: ['posts'] });
+        },
+        onError: (errors: any) => {
+          toast.error('Failed to update post schedule.', {
+            position: POSITION.TOP_CENTER,
+            timeout: 5000,
+            icon: '❌',
+          });
+          
+          // Revert the event to its original position
+          info.revert();
+          
+          console.error('Error updating post schedule:', errors);
+        }
+      });
+    }
   },
   eventDidMount: function(info: any) {
     // Force events to use their individual colors
