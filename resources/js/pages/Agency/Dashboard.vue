@@ -60,7 +60,7 @@ const platformPillColors = {
   Facebook: 'bg-blue-100 text-blue-600',
   Instagram: 'bg-pink-100 text-pink-600',
   Twitter: 'bg-gray-100 text-gray-800',
-  TikTok: 'bg-black text-white',
+  TikTok: 'bg-cyan-500 text-white',
   LinkedIn: 'bg-blue-50 text-blue-800',
 };
 
