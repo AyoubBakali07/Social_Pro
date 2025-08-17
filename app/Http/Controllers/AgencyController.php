@@ -62,10 +62,10 @@ class AgencyController extends Controller
         }
         
         // Update the client's status to inactive
-        $client->update(['status' => 'inactive']);
+        $client->update(['status' => 'Inactive']);
         
         // Optionally, you can also revoke all of the client's tokens
-        $client->user->tokens()->delete();
+        // $client->user->tokens()->delete();
         
         return response()->json([
             'message' => 'Client deactivated successfully',
@@ -87,7 +87,7 @@ class AgencyController extends Controller
         }
         
         // Update the client's status to active
-        $client->update(['status' => 'active']);
+        $client->update(['status' => 'Active']);
         
         return response()->json([
             'message' => 'Client activated successfully',
@@ -185,12 +185,13 @@ class AgencyController extends Controller
             abort(403, 'No agency found for this user.');
         }
         $totalClients = Client::where('agency_id', $agency->id)->count();
-        $activeClients = Client::where('agency_id', $agency->id)->where('status', 'active')->count();
-        $pendingClients = Client::where('agency_id', $agency->id)->where('status', 'pending')->count();
-        $inactiveClients = Client::where('agency_id', $agency->id)->where('status', 'inactive')->count();
+        $activeClients = Client::where('agency_id', $agency->id)->where('status', 'Active')->count();
+        $pendingClients = Client::where('agency_id', $agency->id)->where('status', 'Pending')->count();
+        $inactiveClients = Client::where('agency_id', $agency->id)->where('status', 'Inactive')->count();
         $clients = Client::with('user')->where('agency_id', $agency->id)->get()->map(function ($client) {
             $pendingPosts = $client->posts()->where('status', 'pending')->count();
             return [
+                'id' => $client->id,
                 'name' => $client->user ? $client->user->name : '',
                 'email' => $client->user ? $client->user->email : '',
                 'status' => ucfirst($client->status),

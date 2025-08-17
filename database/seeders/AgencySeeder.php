@@ -17,7 +17,7 @@ class AgencySeeder extends Seeder
             $agency = Agency::create([
                 'user_id' => $user->id,
                 'company_name' => fake()->company(),
-                'status' => 'active',
+                'status' => 'Active',
             ]);
             self::$agencies[] = $agency;
         }

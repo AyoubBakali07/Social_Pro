@@ -52,9 +52,9 @@ class AdminController extends Controller
     public function agencies()
     {
         $totalAgencies = Agency::count();
-        $active = Agency::where('status', 'active')->count();
-        $pending = Agency::where('status', 'pending')->count();
-        $suspended = Agency::where('status', 'inactive')->count(); // Assuming 'inactive' means suspended
+        $active = Agency::where('status', 'Active')->count();
+        $pending = Agency::where('status', 'Pending')->count();
+        $suspended = Agency::where('status', 'Inactive')->count(); // Assuming 'Inactive' means suspended
         $agencies = Agency::withCount('clients')->get()->map(function ($agency) {
             return [
                 'name' => $agency->company_name,

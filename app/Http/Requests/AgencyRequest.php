@@ -16,7 +16,7 @@ class AgencyRequest extends FormRequest
         return [
             'user_id' => 'required|exists:users,id|unique:agencies,user_id,' . $this->agency,
             'company_name' => 'required|string|max:255',
-            'status' => 'required|in:active,inactive,pending',
+            'status' => 'required|in:Active,Inactive,Pending',
         ];
     }
 } 

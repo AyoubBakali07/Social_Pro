@@ -61,7 +61,7 @@ class SetupPasswordController extends Controller
 
                 // Update client status to active
                 if ($user->client) {
-                    $user->client->update(['status' => 'active']);
+                    $user->client->update(['status' => 'Active']);
                 }
 
                 event(new PasswordReset($user));
