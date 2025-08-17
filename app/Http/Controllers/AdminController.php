@@ -7,6 +7,12 @@ use App\Models\Client;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Http\Requests\StoreAgencyUserRequest;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\AgencyInvitation;
 
 class AdminController extends Controller
 {
@@ -120,5 +126,45 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin.agencies');
+    }
+
+    /**
+     * Invite a new agency via email authentication
+     */
+    public function storeAgency(StoreAgencyUserRequest $request)
+    {
+        try {
+            // Create the user with a random temporary password
+            $password = Str::random(32);
+            $newUser = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($password),
+                'role' => 'agency',
+                'email_verified_at' => null,
+            ]);
+
+            // Create the agency record
+            $agency = Agency::create([
+                'user_id' => $newUser->id,
+                'company_name' => $request->company_name,
+                'status' => 'Pending',
+            ]);
+
+            // Generate a password setup token
+            $token = app('auth.password.broker')->createToken($newUser);
+
+            // Send the invitation email
+            Notification::send($newUser, new AgencyInvitation($token, config('app.name')));
+
+            return redirect()->route('admin.agencies')->with([
+                'message' => 'Agency invited successfully. They will receive an email to set their password.',
+                'success' => true,
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'message' => 'An error occurred while creating the agency. Please try again.'
+            ]);
+        }
     }
 }

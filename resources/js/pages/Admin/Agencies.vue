@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import { useToast, POSITION } from 'vue-toastification'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -32,6 +32,76 @@ const showActivateDialog = ref(false)
 const selectedAgency = ref<AgencyItem | null>(null)
 const isDeactivating = ref(false)
 const isActivating = ref(false)
+
+// Add Agency modal state
+const showAddAgencyModal = ref(false)
+const addAgencyForm = ref({
+  name: '',
+  email: '',
+  company_name: '',
+  message: ''
+})
+const addAgencyErrors = ref<{name:string;email:string;company_name:string}>({
+  name: '',
+  email: '',
+  company_name: ''
+})
+const loadingAdd = ref(false)
+const form = useForm({
+  name: '',
+  email: '',
+  company_name: '',
+  message: ''
+})
+
+function openAddAgencyModal() {
+  showAddAgencyModal.value = true
+}
+
+function closeAddAgencyModal() {
+  showAddAgencyModal.value = false
+  addAgencyForm.value = { name: '', email: '', company_name: '', message: '' }
+  addAgencyErrors.value = { name: '', email: '', company_name: '' }
+}
+
+function validateAddAgencyForm() {
+  let valid = true
+  addAgencyErrors.value = { name: '', email: '', company_name: '' }
+  if (!addAgencyForm.value.name) { addAgencyErrors.value.name = 'Name is required.'; valid = false }
+  if (!addAgencyForm.value.email) { addAgencyErrors.value.email = 'Email is required.'; valid = false }
+  if (!addAgencyForm.value.company_name) { addAgencyErrors.value.company_name = 'Company name is required.'; valid = false }
+  return valid
+}
+
+async function submitAddAgency() {
+  if (!validateAddAgencyForm()) return
+  loadingAdd.value = true
+  try {
+    form.name = addAgencyForm.value.name
+    form.email = addAgencyForm.value.email
+    form.company_name = addAgencyForm.value.company_name
+    form.message = addAgencyForm.value.message
+
+    await form.post(route ? route('admin.agencies.store') : '/admin/agencies', {
+      onSuccess: () => {
+        closeAddAgencyModal()
+        form.reset()
+        toast.success('Agency invited successfully', { position: POSITION.TOP_RIGHT })
+      },
+      onError: (errors: Record<string, string | string[]>) => {
+        addAgencyErrors.value = { name: '', email: '', company_name: '' }
+        if (errors.name) addAgencyErrors.value.name = Array.isArray(errors.name) ? errors.name[0] : errors.name
+        if (errors.email) addAgencyErrors.value.email = Array.isArray(errors.email) ? errors.email[0] : errors.email
+        if (errors.company_name) addAgencyErrors.value.company_name = Array.isArray(errors.company_name) ? errors.company_name[0] : errors.company_name
+        toast.error('Please fix the errors in the form.', { position: POSITION.TOP_RIGHT })
+      },
+      onFinish: () => { loadingAdd.value = false }
+    })
+  } catch (e) {
+    loadingAdd.value = false
+    toast.error('An unexpected error occurred. Please try again.', { position: POSITION.TOP_RIGHT })
+  }
+}
 
 const filteredAgencies = computed(() => {
   if (!search.value) return props.agencies
@@ -127,7 +197,7 @@ async function activateAgency() {
           <h1 class="text-2xl font-bold mb-1">Agencies</h1>
           <p class="text-gray-500">Manage registered agencies and their details</p>
         </div>
-        <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50 self-start md:self-auto">
+        <button @click="openAddAgencyModal" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50 self-start md:self-auto">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
@@ -217,6 +287,49 @@ async function activateAgency() {
       </div>
     </div>
   </AppLayout>
+
+  <!-- Add Agency Modal -->
+  <Dialog v-model:open="showAddAgencyModal">
+    <DialogContent class="max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Invite New Agency</DialogTitle>
+        <DialogDescription>
+          Send an email invitation to create an agency account.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Owner Name</label>
+          <input v-model="addAgencyForm.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Jane Doe" />
+          <p v-if="addAgencyErrors.name" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.name }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Owner Email</label>
+          <input v-model="addAgencyForm.email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="jane@agency.com" />
+          <p v-if="addAgencyErrors.email" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.email }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Company Name</label>
+          <input v-model="addAgencyForm.company_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Acme Agency" />
+          <p v-if="addAgencyErrors.company_name" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.company_name }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Message (optional)</label>
+          <textarea v-model="addAgencyForm.message" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Optional note to include in the invite email" />
+        </div>
+      </div>
+      <DialogFooter class="mt-6">
+        <Button variant="outline" @click="closeAddAgencyModal">Cancel</Button>
+        <Button variant="default" :disabled="loadingAdd" @click="submitAddAgency">
+          <svg v-if="loadingAdd" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ loadingAdd ? 'Sending Invite...' : 'Send Invite' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 
   <!-- Deactivate Agency Confirmation Dialog -->
   <Dialog v-model:open="showDeactivateDialog">
