@@ -27,6 +27,8 @@ Route::get('/client/calendar', function () {
 })->middleware(['auth', 'verified'])->name('client.calendar');
 
 Route::get('/admin/agencies', [\App\Http\Controllers\AdminController::class, 'agencies'])->middleware(['auth', 'verified'])->name('admin.agencies');
+Route::put('/admin/agencies/{agency}/deactivate', [\App\Http\Controllers\AdminController::class, 'deactivateAgency'])->middleware(['auth', 'verified'])->name('admin.agencies.deactivate');
+Route::put('/admin/agencies/{agency}/activate', [\App\Http\Controllers\AdminController::class, 'activateAgency'])->middleware(['auth', 'verified'])->name('admin.agencies.activate');
 
 // Client invitation and setup routes
 Route::middleware('auth')->group(function () {

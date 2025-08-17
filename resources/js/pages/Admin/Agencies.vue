@@ -1,13 +1,37 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
+import { useToast, POSITION } from 'vue-toastification'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
+import Button from '@/components/ui/button/Button.vue'
 import StatCard from '@/components/ui/card/StatCard.vue'
 import GenericTable from '@/components/ui/GenericTable.vue'
 
 const props = defineProps<{ stats: Array<{ label: string; value: number|string; color: string; icon: string; description?: string }>, agencies: Array<any> }>();
 
 const search = ref('')
+const toast = useToast()
+
+type AgencyItem = {
+  id: number
+  name: string
+  email: string
+  status: string
+  clients: number
+  created: string
+}
+
+const showDeactivateDialog = ref(false)
+const showActivateDialog = ref(false)
+const selectedAgency = ref<AgencyItem | null>(null)
+const isDeactivating = ref(false)
+const isActivating = ref(false)
 
 const filteredAgencies = computed(() => {
   if (!search.value) return props.agencies
@@ -45,6 +69,52 @@ const columns = [
   { label: 'Created', key: 'created', slot: 'created' },
   { label: 'Actions', key: 'actions', slot: 'actions' },
 ];
+
+function openDeactivateDialog(row: AgencyItem) {
+  if (!row?.id) return
+  selectedAgency.value = row
+  showDeactivateDialog.value = true
+}
+
+function openActivateDialog(row: AgencyItem) {
+  if (!row?.id) return
+  selectedAgency.value = row
+  showActivateDialog.value = true
+}
+
+async function deactivateAgency() {
+  if (!selectedAgency.value?.id) return
+  isDeactivating.value = true
+  const url = `/admin/agencies/${selectedAgency.value.id}/deactivate`
+  router.put(url, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Agency deactivated successfully', { position: POSITION.TOP_RIGHT })
+      showDeactivateDialog.value = false
+      selectedAgency.value = null
+    },
+    onFinish: () => {
+      isDeactivating.value = false
+    }
+  })
+}
+
+async function activateAgency() {
+  if (!selectedAgency.value?.id) return
+  isActivating.value = true
+  const url = `/admin/agencies/${selectedAgency.value.id}/activate`
+  router.put(url, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Agency activated successfully', { position: POSITION.TOP_RIGHT })
+      showActivateDialog.value = false
+      selectedAgency.value = null
+    },
+    onFinish: () => {
+      isActivating.value = false
+    }
+  })
+}
 </script>
 
 <template>
@@ -131,9 +201,14 @@ const columns = [
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>
               </button>
-              <button class="text-red-600 hover:text-red-900" title="Delete">
+              <button v-if="row.status !== 'Inactive'" class="text-red-600 hover:text-red-900" title="Deactivate" @click="openDeactivateDialog(row)">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+              <button v-else class="text-green-600 hover:text-green-800" title="Activate" @click="openActivateDialog(row)">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </button>
             </div>
@@ -142,4 +217,49 @@ const columns = [
       </div>
     </div>
   </AppLayout>
-</template> 
+
+  <!-- Deactivate Agency Confirmation Dialog -->
+  <Dialog v-model:open="showDeactivateDialog">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Deactivate Agency</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to deactivate {{ selectedAgency?.name }}? They will lose access.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="mt-4 flex justify-end gap-3">
+        <Button variant="outline" @click="showDeactivateDialog = false">Cancel</Button>
+        <Button variant="destructive" @click="deactivateAgency" :disabled="isDeactivating">
+          <svg v-if="isDeactivating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isDeactivating ? 'Deactivating...' : 'Deactivate' }}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Activate Agency Confirmation Dialog -->
+  <Dialog v-model:open="showActivateDialog">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Activate Agency</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to activate {{ selectedAgency?.name }}?
+        </DialogDescription>
+      </DialogHeader>
+      <div class="mt-4 flex justify-end gap-3">
+        <Button variant="outline" @click="showActivateDialog = false">Cancel</Button>
+        <Button variant="default" @click="activateAgency" :disabled="isActivating">
+          <svg v-if="isActivating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isActivating ? 'Activating...' : 'Activate' }}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+</template>
+ 

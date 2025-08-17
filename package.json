@@ -28,6 +28,7 @@
         "@fullcalendar/interaction": "^6.1.18",
         "@fullcalendar/rrule": "^6.1.18",
         "@fullcalendar/vue3": "^6.1.18",
+        "@headlessui/vue": "^1.7.23",
         "@inertiajs/vue3": "^2.0.0",
         "@tailwindcss/vite": "^4.1.1",
         "@vitejs/plugin-vue": "^5.2.1",

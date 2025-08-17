@@ -57,6 +57,7 @@ class AdminController extends Controller
         $suspended = Agency::where('status', 'Inactive')->count(); // Assuming 'Inactive' means suspended
         $agencies = Agency::withCount('clients')->get()->map(function ($agency) {
             return [
+                'id' => $agency->id,
                 'name' => $agency->company_name,
                 'email' => $agency->user ? $agency->user->email : '',
                 'clients' => $agency->clients_count,
@@ -98,4 +99,26 @@ class AdminController extends Controller
             'agencies' => $agencies,
         ]);
     }
-} 
+
+    public function deactivateAgency(Agency $agency)
+    {
+        // Set status to 'Inactive' if not already
+        if ($agency->status !== 'Inactive') {
+            $agency->status = 'Inactive';
+            $agency->save();
+        }
+
+        // Redirect back to agencies page
+        return redirect()->route('admin.agencies');
+    }
+
+    public function activateAgency(Agency $agency)
+    {
+        if ($agency->status !== 'Active') {
+            $agency->status = 'Active';
+            $agency->save();
+        }
+
+        return redirect()->route('admin.agencies');
+    }
+}
