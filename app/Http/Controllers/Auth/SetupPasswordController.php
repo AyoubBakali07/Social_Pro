@@ -64,6 +64,11 @@ class SetupPasswordController extends Controller
                     $user->client->update(['status' => 'Active']);
                 }
 
+                // Update agency status to active
+                if ($user->agency) {
+                    $user->agency->update(['status' => 'Active']);
+                }
+
                 event(new PasswordReset($user));
             }
         );
@@ -74,13 +79,20 @@ class SetupPasswordController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             // Get the user to log them in
             $user = User::where('email', $request->email)->first();
-            
+
             // Log the user in
             Auth::login($user);
-            
-            // Redirect to the client dashboard with a success message
-            return redirect()->route('client.dashboard')
-                ->with('status', __($status));
+
+            // Redirect based on role/relations
+            if ($user->agency) {
+                return redirect()->route('agency.dashboard')->with('status', __($status));
+            }
+            if ($user->client) {
+                return redirect()->route('client.dashboard')->with('status', __($status));
+            }
+
+            // Fallback
+            return redirect()->route('home')->with('status', __($status));
         }
 
         // If there was an error, redirect back with the error message

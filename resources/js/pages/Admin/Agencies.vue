@@ -300,22 +300,22 @@ async function activateAgency() {
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700">Owner Name</label>
-          <input v-model="addAgencyForm.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Jane Doe" />
+          <input v-model="addAgencyForm.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" placeholder="Jane Doe" />
           <p v-if="addAgencyErrors.name" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.name }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Owner Email</label>
-          <input v-model="addAgencyForm.email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="jane@agency.com" />
+          <input v-model="addAgencyForm.email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" placeholder="jane@agency.com" />
           <p v-if="addAgencyErrors.email" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.email }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Company Name</label>
-          <input v-model="addAgencyForm.company_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Acme Agency" />
+          <input v-model="addAgencyForm.company_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" placeholder="Acme Agency" />
           <p v-if="addAgencyErrors.company_name" class="mt-1 text-sm text-red-600">{{ addAgencyErrors.company_name }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Message (optional)</label>
-          <textarea v-model="addAgencyForm.message" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Optional note to include in the invite email" />
+          <textarea v-model="addAgencyForm.message" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" placeholder="Optional note to include in the invite email" />
         </div>
       </div>
       <DialogFooter class="mt-6">
