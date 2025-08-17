@@ -9,8 +9,14 @@ use App\Http\Requests\PostRequest;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreClientUserRequest;
+use App\Notifications\ClientInvitation;
+use Illuminate\Support\Facades\Notification;
 
 class AgencyController extends Controller
 {
@@ -40,6 +46,53 @@ class AgencyController extends Controller
     {
         $agency->delete();
         return response()->json(null, 204);
+    }
+    
+    /**
+     * Deactivate a client account
+     *
+     * @param  \App\Models\Client  $client
+     * @return \Illuminate\Http\Response
+     */
+    public function deactivateClient(Client $client)
+    {
+        // Verify that the authenticated user is the agency owner
+        if (auth()->id() !== $client->agency->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Update the client's status to inactive
+        $client->update(['status' => 'Inactive']);
+        
+        // Optionally, you can also revoke all of the client's tokens
+        // $client->user->tokens()->delete();
+        
+        return response()->json([
+            'message' => 'Client deactivated successfully',
+            'client' => $client->fresh()
+        ]);
+    }
+    
+    /**
+     * Activate a client account
+     *
+     * @param  \App\Models\Client  $client
+     * @return \Illuminate\Http\Response
+     */
+    public function activateClient(Client $client)
+    {
+        // Verify that the authenticated user is the agency owner
+        if (auth()->id() !== $client->agency->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Update the client's status to active
+        $client->update(['status' => 'Active']);
+        
+        return response()->json([
+            'message' => 'Client activated successfully',
+            'client' => $client->fresh()
+        ]);
     }
 
     public function dashboard(Request $request)
@@ -132,12 +185,13 @@ class AgencyController extends Controller
             abort(403, 'No agency found for this user.');
         }
         $totalClients = Client::where('agency_id', $agency->id)->count();
-        $activeClients = Client::where('agency_id', $agency->id)->where('status', 'active')->count();
-        $pendingClients = Client::where('agency_id', $agency->id)->where('status', 'pending')->count();
-        $inactiveClients = Client::where('agency_id', $agency->id)->where('status', 'inactive')->count();
+        $activeClients = Client::where('agency_id', $agency->id)->where('status', 'Active')->count();
+        $pendingClients = Client::where('agency_id', $agency->id)->where('status', 'Pending')->count();
+        $inactiveClients = Client::where('agency_id', $agency->id)->where('status', 'Inactive')->count();
         $clients = Client::with('user')->where('agency_id', $agency->id)->get()->map(function ($client) {
             $pendingPosts = $client->posts()->where('status', 'pending')->count();
             return [
+                'id' => $client->id,
                 'name' => $client->user ? $client->user->name : '',
                 'email' => $client->user ? $client->user->email : '',
                 'status' => ucfirst($client->status),
@@ -154,19 +208,19 @@ class AgencyController extends Controller
                     'icon' => '<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 1 1-8 0"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"/></svg>',
                 ],
                 [
-                    'label' => 'Active',
+                    'label' => 'Active Clients',
                     'value' => $activeClients,
                     'color' => 'green',
                     'icon' => '<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>',
                 ],
                 [
-                    'label' => 'Pending',
+                    'label' => 'Pending Clients',
                     'value' => $pendingClients,
                     'color' => 'yellow',
                     'icon' => '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
                 ],
                 [
-                    'label' => 'Inactive',
+                    'label' => 'Inactive Clients',
                     'value' => $inactiveClients,
                     'color' => 'red',
                     'icon' => '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
@@ -195,6 +249,7 @@ class AgencyController extends Controller
         $post = Post::create(array_merge($validated, [
             'agency_id' => $agency->id,
             'media' => $mediaPaths,
+            'status' => 'pending',
         ]));
 
         $post->load('client');
@@ -206,6 +261,79 @@ class AgencyController extends Controller
     public function destroyPost(Post $post)
     {
         $post->delete();
-        return redirect()->back()->with('success', 'Post deleted successfully!');
+        return redirect()->back()->with('success', 'Post deleted successfully');
     }
-} 
+
+    public function updatePost(Request $request, Post $post)
+    {
+        // Verify that the authenticated user owns the agency that owns this post
+        $user = Auth::user();
+        $agency = $user->agency;
+        
+        if (!$agency || $post->agency_id !== $agency->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Update the schedule date
+        $post->update([
+            'scheduleDate' => $request->scheduleDate,
+        ]);
+
+        // Return a redirect response for Inertia compatibility
+        return redirect()->back()->with('success', 'Post schedule updated successfully');
+    }
+
+    /**
+     * Store a newly created client user.
+     *
+     * @param  \App\Http\Requests\StoreClientUserRequest  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function storeClient(StoreClientUserRequest $request)
+    {
+        $user = Auth::user();
+        $agency = Agency::where('user_id', $user->id)->first();
+
+        if (!$agency) {
+            return back()->withErrors([
+                'message' => 'No agency found for this user.'
+            ]);
+        }
+
+        try {
+            // Create the user with a random password
+            $password = Str::random(32);
+            $newUser = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($password),
+                'role' => 'client',
+                'email_verified_at' => null, // Will be verified after setting password
+            ]);
+
+            // Create the client record
+            $client = Client::create([
+                'user_id' => $newUser->id,
+                'agency_id' => $agency->id,
+                'company_name' => $request->company_name,
+                'status' => 'pending',
+            ]);
+
+            // Generate a password reset token
+            $token = app('auth.password.broker')->createToken($newUser);
+
+            // Send the invitation email
+            Notification::send($newUser, new ClientInvitation($token, $agency->name));
+
+            return redirect()->back()->with([
+                'message' => 'Client invited successfully. They will receive an email to set their password.',
+                'success' => true
+            ]);
+            
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'message' => 'An error occurred while creating the client. Please try again.'
+            ]);
+        }
+    }
+}

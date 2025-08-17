@@ -51,7 +51,8 @@ const platformIconSvgs = {
   
   Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-pink-600" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
   Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-sky-500" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.5 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03A12.94 12.94 0 0 1 3 1.13a4.48 4.48 0 0 0-.61 2.27c0 1.56.8 2.94 2.02 3.75A4.48 4.48 0 0 1 2 6.13v.06c0 2.18 1.55 4 3.8 4.42a4.52 4.52 0 0 1-2.04.08c.57 1.78 2.23 3.08 4.2 3.12A9.05 9.05 0 0 1 1 19.54a12.8 12.8 0 0 0 6.95 2.04c8.36 0 12.94-6.93 12.94-12.94 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 23 3z"/></svg>`,
-  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="16" y2="16"/><line x1="8" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+  TikTok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-black" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>`,
+  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
 };
 
 // Platform pill color classes
@@ -59,6 +60,7 @@ const platformPillColors = {
   Facebook: 'bg-blue-100 text-blue-600',
   Instagram: 'bg-pink-100 text-pink-600',
   Twitter: 'bg-gray-100 text-gray-800',
+  TikTok: 'bg-cyan-500 text-white',
   LinkedIn: 'bg-blue-50 text-blue-800',
 };
 
@@ -253,7 +255,7 @@ const platformConfig = {
   },
   'TikTok': {
     shortName: 'TT',
-    postTypes: ['Video', 'Live', 'Duet', 'Stitch'],
+    postTypes: ['Reel', 'Story'],
     icon: 'tiktok',
     color: 'bg-black text-white',
     iconColor: 'text-black'
@@ -268,12 +270,12 @@ const platformConfig = {
 };
 
 const postTypeIcons = {
-  'Post': '📝',
-  'Story': '📱',
-  'Reel': '🎬',
-  'Carousel': '🎠',
-  'Thread': '🧵',
-  'Article': '📄'
+  'Post': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>`,
+  'Story': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>`,
+  'Reel': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" ry="3"/><polygon points="10,9 16,12 10,15"/></svg>`,
+  'Carousel': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>`,
+  'Thread': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M13 8H7"/><path d="M17 12H7"/></svg>`,
+  'Article': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>`
 };
 
 function getPlatformColor(platform: string): string {
@@ -396,21 +398,16 @@ const formatCalendarEvents = (posts: any[]): EventInput[] => {
 watch(() => props.posts, (newPosts) => {
   console.log('Posts updated, count:', newPosts?.length || 0);
   
-  // Update local posts ref when props.posts changes
-  if (newPosts) {
-    // posts.value = [...newPosts]; // This line was removed as per the edit hint
-    
-    // Log calendar events after update
-    if (calendarRef.value) {
-      const calendarApi = calendarRef.value.getApi();
-      const events = calendarApi.getEvents();
-      console.log('Current calendar events:', events.map((e: any) => ({
-        id: e.id,
-        title: e.title,
-        start: e.start,
-        extendedProps: e.extendedProps
-      })));
-    }
+  // Log calendar events after update
+  if (calendarRef.value) {
+    const calendarApi = calendarRef.value.getApi();
+    const events = calendarApi.getEvents();
+    console.log('Current calendar events:', events.map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      start: e.start,
+      extendedProps: e.extendedProps
+    })));
   }
 }, { immediate: true, deep: true });
 
@@ -424,7 +421,6 @@ const events = computed<EventInput[]>(() => {
     }
     
     const formattedEvents = formatCalendarEvents(props.posts);
-    console.log('Formatted events:', formattedEvents);
     return formattedEvents;
   } catch (error) {
     console.error('Error formatting calendar events:', error);
@@ -535,7 +531,7 @@ const calendarOptions = reactive({
       timeHtml = `<span class='block text-xs font-bold text-gray-800 mb-1'>${hours}:${minutes}</span>`;
     }
     // Add X icon for delete (absolute, only on hover)
-    const xIcon = `<span class='absolute top-2 right-2 z-20 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow cursor-pointer delete-x' title='Delete'>
+    const xIcon = `<span class='absolute top-2 right-2 z-20 hidden group-hover:flex items-center justify-center w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded cursor-pointer delete-x transition-colors' title='Delete'>
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6"/></svg>
     </span>`;
     const platformIconSvg = eventPlatform && platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] ? platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] : '';
@@ -556,8 +552,50 @@ const calendarOptions = reactive({
   },
   eventDrop: function(info: EventDropArg) {
     // Handle the event drop (update your data here)
-    // alert(`Event moved to ${info.event.startStr}`);
-    // You can also update your backend or local state here.
+    const event = info.event;
+    const newDate = event.start;
+    const eventId = event.id;
+    
+    if (newDate && eventId) {
+      // Format the date for the backend
+      const formattedDate = new Date(newDate).toISOString().slice(0, 16);
+      
+      // Show loading state
+      toast.info('Updating post schedule...', {
+        position: POSITION.TOP_CENTER,
+        timeout: 2000,
+        icon: '⏳',
+      });
+      
+      // Update the post date in the database
+      router.put(`/agency/posts/${eventId}`, {
+        scheduleDate: formattedDate
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success('Post schedule updated successfully!', {
+            position: POSITION.TOP_CENTER,
+            timeout: 3000,
+            icon: '✅',
+          });
+          
+          // Refresh the posts data to reflect the change
+          router.reload({ only: ['posts'] });
+        },
+        onError: (errors: any) => {
+          toast.error('Failed to update post schedule.', {
+            position: POSITION.TOP_CENTER,
+            timeout: 5000,
+            icon: '❌',
+          });
+          
+          // Revert the event to its original position
+          info.revert();
+          
+          console.error('Error updating post schedule:', errors);
+        }
+      });
+    }
   },
   eventDidMount: function(info: any) {
     // Force events to use their individual colors
@@ -589,31 +627,7 @@ watch(showEventDetails, (open) => {
   if (open) mediaCarouselIndex.value = 0;
 });
 
-// Test function to verify modal with mock data
-const testModalWithMockData = () => {
-  const mockEvent: CalendarEventData = {
-    id: 'test-event-123',
-    title: 'Test Event: This is a test post',
-    start: new Date(),
-    allDay: true,
-    backgroundColor: '#3b82f6',
-    borderColor: '#2563eb',
-    extendedProps: {
-      platform: 'Instagram',
-      postType: 'Post',
-      content: 'This is a test post to verify the modal is working correctly. You can safely delete this test event.',
-      media: [
-        'https://source.unsplash.com/random/800x600?social',
-        'https://source.unsplash.com/random/800x600?media'
-      ],
-      client: 'Test Client Inc.'
-    }
-  };
-  
-  selectedEvent.value = mockEvent;
-  showEventDetails.value = true;
-  console.log('Test modal opened with mock data:', mockEvent);
-};
+
 
 // Add these computed properties in <script setup lang="ts">
 
@@ -750,15 +764,7 @@ const getPlatformIcon = (platform: string) => {
                 }"
               >
                 <div class="w-8 h-8 mb-1 flex items-center justify-center">
-                  <img 
-                    :src="`/images/platforms/${platform.toLowerCase()}.svg`" 
-                    :alt="platform"
-                    class="w-6 h-6"
-                    v-if="!['TikTok'].includes(platform)"
-                  />
-                  <span v-else class="text-xl">
-                    {{ platform === 'TikTok' ? '🎵' : '' }}
-                  </span>
+                  <div v-html="platformIconSvgs[platform as keyof typeof platformIconSvgs] || ''" class="w-6 h-6"></div>
                 </div>
                 <span class="text-xs font-medium">{{ (platformConfig as any)[platform]?.shortName || platform }}</span>
               </button>
@@ -779,7 +785,7 @@ const getPlatformIcon = (platform: string) => {
                   'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800': form.postType !== type
                 }"
               >
-                <span class="mr-1">{{ postTypeIcons[type as keyof typeof postTypeIcons] || '📌' }}</span>
+                <div class="mr-1" v-html="postTypeIcons[type as keyof typeof postTypeIcons] || ''"></div>
                 <span>{{ type }}</span>
               </button>
             </div>
@@ -940,30 +946,15 @@ const getPlatformIcon = (platform: string) => {
         <DialogTitle class="sr-only">Event Details</DialogTitle>
         <DialogDescription class="sr-only">Details about the selected event.</DialogDescription>
         <div v-if="selectedEvent" class="flex flex-col gap-4 p-6 relative">
-          <!-- Close Button -->
-          <button 
-            @click="showEventDetails = false"
-            class="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Close"
-          >
-            <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          
           <!-- Event Header -->
           <div class="flex items-center gap-3 mb-4">
             <div 
               class="w-10 h-10 rounded-full flex items-center justify-center"
               :style="{ backgroundColor: `${selectedEvent.backgroundColor}20`, border: `2px solid ${selectedEvent.borderColor || selectedEvent.backgroundColor}` }"
             >
-              <component 
-                :is="getPlatformIcon(selectedEvent.extendedProps?.platform || '') || 'FileText'" 
-                class="h-5 w-5"
-                :style="{ color: selectedEvent.borderColor || selectedEvent.backgroundColor }"
-              />
+              <div v-html="platformIconSvgs[selectedEvent.extendedProps?.platform as keyof typeof platformIconSvgs] || ''" class="w-6 h-6"></div>
             </div>
-            <div>
+            <div class="flex-1">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ selectedEvent.title || 'Post Details' }}
               </h3>
@@ -971,6 +962,15 @@ const getPlatformIcon = (platform: string) => {
                 {{ formatDate(selectedEvent.start) }}
               </p>
             </div>
+            <!-- <button 
+              @click="showEventDetails = false"
+              class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Close"
+            >
+              <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button> -->
           </div>
           
           <!-- Post Content -->
@@ -1023,7 +1023,10 @@ const getPlatformIcon = (platform: string) => {
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-gray-500 dark:text-gray-400">Platform</p>
-              <p class="font-medium">{{ selectedEvent.extendedProps?.platform || 'N/A' }}</p>
+              <div class="flex items-center gap-2">
+                <div v-html="platformIconSvgs[selectedEvent.extendedProps?.platform as keyof typeof platformIconSvgs] || ''" class="w-4 h-4"></div>
+                <p class="font-medium">{{ selectedEvent.extendedProps?.platform || 'N/A' }}</p>
+              </div>
             </div>
             <div>
               <p class="text-gray-500 dark:text-gray-400">Post Type</p>
@@ -1041,13 +1044,6 @@ const getPlatformIcon = (platform: string) => {
           
           <!-- Action Buttons -->
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-            <Button 
-              variant="outline" 
-              @click="showEventDetails = false"
-              class="px-4"
-            >
-              Close
-            </Button>
             <Button 
               variant="destructive"
               @click="handleDeleteEvent(selectedEvent.id as string)"
@@ -1068,16 +1064,7 @@ const getPlatformIcon = (platform: string) => {
       </DialogContent>
     </Dialog>
     
-    <!-- Test Button (Remove in production) -->
-    <button 
-      @click="testModalWithMockData"
-      class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-full shadow-lg z-50 flex items-center gap-2 transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-      </svg>
-      Test Modal
-    </button>
+
 
     <Dialog v-model:open="showDeleteConfirm">
       <DialogContent class="max-w-sm w-full">

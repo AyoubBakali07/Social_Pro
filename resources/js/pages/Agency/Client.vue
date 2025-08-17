@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
+import { router, useForm, Head } from '@inertiajs/vue3'
+
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head } from '@inertiajs/vue3'
+import { useToast, POSITION } from 'vue-toastification'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { type BreadcrumbItem } from '@/types'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -12,22 +15,196 @@ import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import StatCard from '@/components/ui/card/StatCard.vue'
 import GenericTable from '@/components/ui/GenericTable.vue'
+import Button from '@/components/ui/button/Button.vue'
 
+// Types
+interface Client {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  pendingPosts?: number;
+  joined?: string;
+  company_name?: string;
+  [key: string]: any;
+}
+
+// State
 const search = ref('')
+const showDeactivateDialog = ref(false)
+const showActivateDialog = ref(false)
+const selectedClient = ref<ClientItem | null>(null)
+const isDeactivating = ref(false)
+const isActivating = ref(false)
 
 const filteredClients = computed(() => {
-  if (!search.value) return props.clients
-  return props.clients.filter(client =>
-    client.name.toLowerCase().includes(search.value.toLowerCase()) ||
-    client.email.toLowerCase().includes(search.value.toLowerCase())
-  )
+  if (!clientsList.value.length) return [];
+  if (!search.value) return clientsList.value;
+  
+  const searchTerm = search.value.toLowerCase();
+  return clientsList.value.filter(client =>
+    (client.name?.toLowerCase() || '').includes(searchTerm) ||
+    (client.email?.toLowerCase() || '').includes(searchTerm)
+  );
 })
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase()
 }
 
-const props = defineProps<{ stats: Array<{ label: string; value: number; color: string; icon: string }>, clients: Array<any> }>();
+// Helper function to get status classes
+function getStatusClasses(status: string): string {
+  switch (status) {
+    case 'Active':
+      return 'bg-emerald-100 text-emerald-700'
+    case 'Inactive':
+      return 'bg-gray-200 text-gray-600'
+    case 'Pending':
+      return 'bg-yellow-100 text-yellow-700'
+    default:
+      return 'bg-gray-200 text-gray-600'
+  }
+}
+
+// Helper function to format status display
+function formatStatus(status: string): string {
+  // Status is already formatted from backend
+  return status
+}
+
+const toast = useToast()
+
+// Open deactivation dialog
+const openDeactivateDialog = (client: ClientItem) => {
+  console.log('Opening deactivate dialog for client:', client)
+  console.log('Client ID:', client.id)
+  console.log('Client object:', JSON.stringify(client, null, 2))
+  selectedClient.value = client
+  showDeactivateDialog.value = true
+}
+
+// Open activation dialog
+const openActivateDialog = (client: ClientItem) => {
+  selectedClient.value = client
+  showActivateDialog.value = true
+}
+
+// Handle client deactivation
+const deactivateClient = async () => {
+  if (!selectedClient.value) {
+    console.error('No client selected for deactivation')
+    toast.error('No client selected for deactivation')
+    showDeactivateDialog.value = false
+    return
+  }
+  
+  isDeactivating.value = true
+  
+  try {
+    console.log('Deactivating client with ID:', selectedClient.value.id)
+    const response = await fetch(`/agency/clients/${selectedClient.value.id}/deactivate`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({})
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // Only update the client status in the local state if the server request was successful
+    const clientIndex = clientsList.value.findIndex(client => client.id === selectedClient.value?.id)
+    if (clientIndex !== -1) {
+      clientsList.value[clientIndex].status = 'Inactive'
+    }
+
+    toast.success('Client deactivated successfully')
+    showDeactivateDialog.value = false
+    selectedClient.value = null
+  } catch (error) {
+    console.error('Deactivation error:', error)
+    toast.error('Failed to deactivate client. Please try again.')
+    // Don't update the local state if the server request failed
+  } finally {
+    isDeactivating.value = false
+  }
+}
+
+// Handle client activation
+const activateClient = async () => {
+  if (!selectedClient.value) {
+    console.error('No client selected for activation')
+    toast.error('No client selected for activation')
+    showActivateDialog.value = false
+    return
+  }
+  
+  isActivating.value = true
+  
+  try {
+    console.log('Activating client with ID:', selectedClient.value.id)
+    const response = await fetch(`/agency/clients/${selectedClient.value.id}/activate`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({})
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // Only update the client status in the local state if the server request was successful
+    const clientIndex = clientsList.value.findIndex(client => client.id === selectedClient.value?.id)
+    if (clientIndex !== -1) {
+      clientsList.value[clientIndex].status = 'Active'
+    }
+
+    toast.success('Client activated successfully')
+    showActivateDialog.value = false
+    selectedClient.value = null
+  } catch (error) {
+    console.error('Activation error:', error)
+    toast.error('Failed to activate client. Please try again.')
+    // Don't update the local state if the server request failed
+  } finally {
+    isActivating.value = false
+  }
+}
+
+interface StatItem {
+  label: string;
+  value: number;
+  color: string;
+  icon: string;
+}
+
+interface ClientItem {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  pendingPosts: number;
+  joined: string;
+  company_name?: string;
+}
+
+const props = withDefaults(defineProps<{ 
+  stats?: StatItem[];
+  clients?: ClientItem[];
+}>(), {
+  stats: () => [],
+  clients: () => []
+});
+
+// Add reactive references for the props to ensure reactivity
+const statsList = computed<StatItem[]>(() => props.stats || []);
+const clientsList = computed<ClientItem[]>(() => props.clients || []);
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -77,10 +254,102 @@ function validateAddClientForm() {
   return valid
 }
 
-function submitAddClient() {
-  if (validateAddClientForm()) {
-    // No backend logic yet, just close modal
-    closeAddClientModal()
+const loading = ref<boolean>(false);
+const form = useForm({
+  name: '',
+  email: '',
+  company_name: '',
+  message: ''
+});
+
+async function submitAddClient() {
+  if (!validateAddClientForm()) {
+    return;
+  }
+  
+  loading.value = true;
+  
+  try {
+    // Update form data
+    form.name = addClientForm.value.name;
+    form.email = addClientForm.value.email;
+    form.company_name = addClientForm.value.company;
+    form.message = addClientForm.value.message;
+    
+    // Submit the form using Inertia
+    const options = {
+      onSuccess: () => {
+        closeAddClientModal();
+        // Clear the form
+        form.reset();
+        // Show success message from the backend or default message
+        const successMessage = form.recentlySuccessful && form.wasSuccessful
+          ? form.recentlySuccessful
+          : 'Client invited successfully!';
+          
+        toast.success(successMessage, {
+          position: POSITION.TOP_RIGHT,
+          timeout: 5000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: 'button',
+          icon: true,
+          rtl: false
+        });
+      },
+      onError: (errors: Record<string, string | string[]>) => {
+        // Reset all errors
+        addClientErrors.value = { name: '', email: '', company: '' };
+        
+        // Handle validation errors
+        if (errors.name) addClientErrors.value.name = Array.isArray(errors.name) ? errors.name[0] : errors.name;
+        if (errors.email) addClientErrors.value.email = Array.isArray(errors.email) ? errors.email[0] : errors.email;
+        if (errors.company_name) addClientErrors.value.company = Array.isArray(errors.company_name) ? errors.company_name[0] : errors.company_name;
+        
+        // Show error toast for general errors
+        const errorMessage = errors.message || 'Please fix the errors in the form.';
+        toast.error(errorMessage, {
+          position: POSITION.TOP_RIGHT,
+          timeout: 5000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: 'button',
+          icon: true,
+          rtl: false
+        });
+      },
+      onFinish: () => {
+        loading.value = false;
+      }
+    };
+    
+    await form.post(route('agency.clients.store'), options);
+  } catch (error) {
+    loading.value = false;
+    toast.error('An unexpected error occurred. Please try again.', {
+      position: POSITION.TOP_RIGHT,
+      timeout: 5000,
+      closeOnClick: true,
+      pauseOnFocusLoss: true,
+      pauseOnHover: true,
+      draggable: true,
+      draggablePercent: 0.6,
+      showCloseButtonOnHover: false,
+      hideProgressBar: true,
+      closeButton: 'button',
+      icon: true,
+      rtl: false
+    });
   }
 }
 
@@ -106,7 +375,7 @@ const columns = [
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
           <StatCard
-            v-for="stat in props.stats"
+            v-for="stat in statsList"
             :key="stat.label"
             :icon="stat.icon"
             :label="stat.label"
@@ -146,8 +415,8 @@ const columns = [
             </div>
           </template>
           <template #status="{ row }">
-            <span :class="row.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (row.status === 'Inactive' ? 'bg-gray-200 text-gray-600' : (row.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : (row.status === 'suspended' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600')))" class="px-3 py-1 rounded-full text-xs font-semibold">
-              {{ row.status }}
+            <span :class="getStatusClasses(row.status)" class="px-3 py-1 rounded-full text-xs font-semibold">
+              {{ formatStatus(row.status) }}
             </span>
           </template>
           <template #pendingPosts="{ row }">
@@ -158,14 +427,89 @@ const columns = [
             <span class="text-gray-600">{{ row.joined }}</span>
           </template>
           <template #actions="{ row }">
-            <button class="p-2 rounded-full hover:bg-gray-100">
-              <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="4" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="10" cy="16" r="2"/></svg>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button class="p-2 rounded-full hover:bg-gray-100">
+                  <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="4" r="2"/>
+                    <circle cx="10" cy="10" r="2"/>
+                    <circle cx="10" cy="16" r="2"/>
+                  </svg>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-48" align="end">
+                <DropdownMenuItem 
+                  v-if="row.status === 'Active' || row.status === 'Pending'"
+                  @click="openDeactivateDialog(row)"
+                  class="text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Deactivate
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  v-else-if="row.status === 'Inactive'"
+                  @click="openActivateDialog(row)"
+                  class="text-green-600 hover:bg-green-50 focus:bg-green-50 cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Activate
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </template>
         </GenericTable>
       </div>
     </div>
   </AppLayout>
+  
+  <!-- Deactivate Client Confirmation Dialog -->
+  <Dialog v-model:open="showDeactivateDialog">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Deactivate Client</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to deactivate {{ selectedClient?.name }}? They will no longer have access to their account.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="mt-4 flex justify-end gap-3">
+        <Button variant="outline" @click="showDeactivateDialog = false">Cancel</Button>
+        <Button variant="destructive" @click="deactivateClient" :disabled="isDeactivating">
+          <svg v-if="isDeactivating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isDeactivating ? 'Deactivating...' : 'Deactivate' }}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+  
+  <!-- Activate Client Confirmation Dialog -->
+  <Dialog v-model:open="showActivateDialog">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Activate Client</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to activate {{ selectedClient?.name }}? They will regain access to their account.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="mt-4 flex justify-end gap-3">
+        <Button variant="outline" @click="showActivateDialog = false">Cancel</Button>
+        <Button variant="default" @click="activateClient" :disabled="isActivating">
+          <svg v-if="isActivating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isActivating ? 'Activating...' : 'Activate' }}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+  
   <Dialog v-model:open="showAddClientModal">
     <DialogContent class="max-w-lg w-full">
       <DialogHeader>
@@ -195,7 +539,17 @@ const columns = [
         </div>
         <DialogFooter class="mt-4 flex justify-end gap-3">
           <button type="button" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" @click="closeAddClientModal">Cancel</button>
-          <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">Send Invitation</button>
+          <button 
+            type="submit" 
+            class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed"
+            :disabled="loading"
+          >
+            <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ loading ? 'Sending...' : 'Send Invitation' }}
+          </button>
         </DialogFooter>
       </form>
     </DialogContent>

@@ -17,7 +17,7 @@ class ClientRequest extends FormRequest
             'user_id' => 'required|exists:users,id|unique:clients,user_id,' . $this->client,
             'agency_id' => 'required|exists:agencies,id',
             'company_name' => 'required|string|max:255',
-            'status' => 'required|in:active,inactive,pending',
+            'status' => 'required|in:Active,Inactive,Pending',
         ];
     }
 } 

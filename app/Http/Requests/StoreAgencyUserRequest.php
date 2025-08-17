@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AgencyRequest extends FormRequest
+class StoreAgencyUserRequest extends FormRequest
 {
     public function authorize()
     {
@@ -14,9 +14,10 @@ class AgencyRequest extends FormRequest
     public function rules()
     {
         return [
-            'user_id' => 'required|exists:users,id|unique:agencies,user_id,' . $this->agency,
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'company_name' => 'required|string|max:255',
-            'status' => 'required|in:Active,Inactive,Pending',
+            'message' => 'nullable|string|max:2000',
         ];
     }
-} 
+}

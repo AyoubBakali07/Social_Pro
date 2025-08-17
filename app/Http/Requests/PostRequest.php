@@ -18,7 +18,7 @@ class PostRequest extends FormRequest
             'content' => 'required|string',
             'media' => 'nullable|array',
             'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,mov|max:20480', // 20MB
-            'scheduleDate' => 'required|date',
+            'scheduleDate' => 'required|date|after:now',
             'platform' => 'required|string',
             'postType' => 'required|string',
             'status' => 'required|in:draft,scheduled,published,approved,rejected',

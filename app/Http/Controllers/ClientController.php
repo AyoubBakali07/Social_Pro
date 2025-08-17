@@ -76,7 +76,7 @@ class ClientController extends Controller
                     'icon' => "<svg class='w-6 h-6 text-yellow-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>",
                 ],
                 [
-                    'label' => 'Rejected',
+                    'label' => 'Rejected Posts',
                     'value' => $rejected,
                     'color' => 'text-red-600',
                     'icon' => "<svg class='w-6 h-6 text-red-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><path d='M15 9l-6 6m0-6l6 6'/></svg>",

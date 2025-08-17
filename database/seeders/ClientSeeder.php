@@ -25,7 +25,7 @@ class ClientSeeder extends Seeder
                 'user_id' => $user->id,
                 'agency_id' => $agency->id,
                 'company_name' => fake()->company(),
-                'status' => 'active',
+                'status' => 'Active',
             ]);
             self::$clients[] = $client;
             if ((($i + 1) % $clientsPerAgency) === 0 && $agencyIndex < $agencyCount - 1) {
