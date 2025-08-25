@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -60,7 +61,56 @@ class ClientController extends Controller
             ->where('status', 'pending')
             ->with('client')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'title', 'content', 'platform', 'postType', 'status', 'client_id', 'created_at', 'feedback', 'comment']);
+            ->get()
+            ->map(function ($post) {
+                $mediaUrls = collect($post->media)
+                    ->filter()
+                    ->map(function ($path) {
+                        $fixedPath = str_replace('\\', '/', $path);
+                        return Storage::url($fixedPath);
+                    })->all();
+
+                return [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'platform' => $post->platform,
+                    'postType' => $post->postType,
+                    'status' => $post->status,
+                    'client_id' => $post->client_id,
+                    'created_at' => $post->created_at->toIso8601String(),
+                    'scheduleDate' => optional($post->scheduleDate)->toIso8601String(),
+                    'feedback' => $post->feedback,
+                    'comment' => $post->comment,
+                    'media' => $mediaUrls,
+                ];
+            });
+
+        $calendarPosts = Post::where('client_id', $client->id)
+            ->whereIn('status', ['pending', 'scheduled', 'approved', 'published'])
+            ->with('client')
+            ->orderBy('scheduleDate', 'asc')
+            ->get()
+            ->map(function ($post) {
+                $mediaUrls = collect($post->media)
+                    ->filter()
+                    ->map(function ($path) {
+                        $fixedPath = str_replace('\\', '/', $path);
+                        return Storage::url($fixedPath);
+                    })->all();
+
+                return [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'scheduleDate' => optional($post->scheduleDate)->toIso8601String(),
+                    'platform' => $post->platform,
+                    'postType' => $post->postType,
+                    'status' => $post->status,
+                    'media' => $mediaUrls,
+                    'created_at' => $post->created_at->toIso8601String(),
+                ];
+            });
 
         return Inertia::render('Client/Dashboard', [
             'stats' => [
@@ -89,7 +139,8 @@ class ClientController extends Controller
                     'icon' => "<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'/></svg>"
                 ]
             ],
-            'pendingPosts' => $pendingPosts
+            'pendingPosts' => $pendingPosts,
+            'calendarPosts' => $calendarPosts
         ]);
     }
 

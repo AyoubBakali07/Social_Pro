@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { toast } from '@/toast';
 import { type BreadcrumbItem } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
@@ -40,6 +40,7 @@ interface StatItem {
 interface DashboardProps {
   pendingPosts: Post[];
   stats: StatItem[];
+  calendarPosts?: any[];
 }
 
 const search = ref('');
@@ -126,15 +127,16 @@ async function submitFeedback() {
   showFeedback.value = false
 }
 
-const calendarEvents = ref([
-  {
-    title: 'Sample Event',
-    start: new Date().toISOString().slice(0, 10),
-    allDay: true,
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-]);
+// Toastify server flash messages (success/error)
+const page = usePage();
+watch(() => (page.props as any).flash?.success, (message) => {
+  if (message) toast.success(message)
+}, { immediate: true });
+watch(() => (page.props as any).flash?.error, (message) => {
+  if (message) toast.error(message)
+}, { immediate: true });
+
+const calendarEvents = ref<any[]>([]);
 
 const calendarOptions = ref({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
@@ -144,9 +146,7 @@ const calendarOptions = ref({
     center: 'title',
     right: 'dayGridMonth,timeGridWeek,timeGridDay'
   },
-  events: [
-    // Events will be added here
-  ],
+  events: calendarEvents,
   dateClick: (info: any) => {
     // Handle date click
   },
@@ -154,6 +154,39 @@ const calendarOptions = ref({
     // Handle event click
   }
 });
+
+function getPlatformColor(platform: string) {
+  const map: Record<string, string> = {
+    Facebook: '#3b82f6',
+    Instagram: '#ec4899',
+    Twitter: '#111827',
+    TikTok: '#06b6d4',
+    LinkedIn: '#1e40af',
+  };
+  return map[platform] || '#64748b';
+}
+
+function formatCalendarEvents(posts: any[]) {
+  if (!Array.isArray(posts)) return [];
+  return posts.map((post: any) => {
+    const color = getPlatformColor(post.platform || '');
+    return {
+      id: String(post.id),
+      title: post.content ? String(post.content).slice(0, 30) + (String(post.content).length > 30 ? '…' : '') : post.title || 'Post',
+      start: post.scheduleDate || new Date().toISOString().slice(0,10),
+      allDay: true,
+      backgroundColor: color,
+      borderColor: color,
+      extendedProps: { ...post }
+    };
+  });
+}
+
+// initialize calendar events from props and update when props change
+calendarEvents.value = formatCalendarEvents(props.calendarPosts || []);
+watch(() => props.calendarPosts, (posts) => {
+  calendarEvents.value = formatCalendarEvents(posts || [])
+}, { deep: true });
 </script>
 
 <template>
