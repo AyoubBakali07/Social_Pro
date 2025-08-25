@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
-import AppLayout from '@/layouts/AppLayout.vue'
-import { Head } from '@inertiajs/vue3'
-import { type BreadcrumbItem } from '@/types'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog'
+import { ref, computed } from 'vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head } from '@inertiajs/vue3';
+import { type BreadcrumbItem } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -11,41 +11,48 @@ import rrulePlugin from '@fullcalendar/rrule';
 import StatCard from '@/components/ui/card/StatCard.vue';
 import FeedbackModal from '@/components/ui/dialog/FeedbackModal.vue';
 
-const search = ref('')
-const clients = ref([
-  {
-    name: 'Sarah Johnson',
-    email: 'sarah@example.com',
-    status: 'Active',
-    pendingPosts: 3,
-    joined: '1/15/2024',
-  },
-  {
-    name: 'Mike Chen',
-    email: 'mike@techcorp.com',
-    status: 'Active',
-    pendingPosts: 1,
-    joined: '2/1/2024',
-  },
-  {
-    name: 'Emma Davis',
-    email: 'emma@startup.co',
-    status: 'Inactive',
-    pendingPosts: 0,
-    joined: '1/20/2024',
-  },
-])
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  platform: string;
+  postType: string;
+  status: string;
+  client_id: number;
+  created_at: string;
+  client?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
 
-const filteredClients = computed(() => {
-  if (!search.value) return clients.value
-  return clients.value.filter(client =>
-    client.name.toLowerCase().includes(search.value.toLowerCase()) ||
-    client.email.toLowerCase().includes(search.value.toLowerCase())
-  )
-})
+interface StatItem {
+  label: string;
+  value: number | string;
+  color: string;
+  icon: string;
+}
+
+interface DashboardProps {
+  pendingPosts: Post[];
+  stats: StatItem[];
+}
+
+const search = ref('');
+const props = defineProps<DashboardProps>();
+
+const filteredPosts = computed(() => {
+  if (!search.value) return props.pendingPosts;
+  return props.pendingPosts.filter(
+    (post) =>
+      (post.title?.toLowerCase().includes(search.value.toLowerCase()) ||
+      post.content?.toLowerCase().includes(search.value.toLowerCase()))
+  );
+});
 
 function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  return name.split(' ').map(n => n[0]).join('').toUpperCase();
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -53,9 +60,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     title: 'Dashboard',
     href: '/client/dashboard',
   },
-]
-
-const props = defineProps<{ stats: Array<{ label: string; value: number|string; color: string; icon: string }> }>();
+];
 
 const pendingApprovals = [
   {
@@ -87,15 +92,23 @@ const calendarEvents = ref([
   },
 ]);
 
-const calendarOptions = reactive({
+const calendarOptions = ref({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
   initialView: 'dayGridMonth',
-  editable: false,
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'dayGridMonth,dayGridWeek,dayGridDay',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay'
   },
+  events: [
+    // Events will be added here
+  ],
+  dateClick: (info: any) => {
+    // Handle date click
+  },
+  eventClick: (info: any) => {
+    // Handle event click
+  }
 });
 </script>
 
