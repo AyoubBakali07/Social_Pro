@@ -22,6 +22,13 @@ Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'd
 
 Route::get('/client/dashboard', [\App\Http\Controllers\ClientController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('client.dashboard');
 
+// Client post actions
+Route::middleware(['auth','verified'])->group(function() {
+    Route::post('/client/posts/{post}/approve', [\App\Http\Controllers\ClientController::class, 'approve'])->name('client.posts.approve');
+    Route::post('/client/posts/{post}/comment', [\App\Http\Controllers\ClientController::class, 'addComment'])->name('client.posts.comment');
+    Route::post('/client/posts/{post}/reject', [\App\Http\Controllers\ClientController::class, 'reject'])->name('client.posts.reject');
+});
+
 Route::get('/client/calendar', function () {
     return Inertia::render('Client/Calendar');
 })->middleware(['auth', 'verified'])->name('client.calendar');

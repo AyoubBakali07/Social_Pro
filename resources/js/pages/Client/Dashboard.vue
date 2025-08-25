@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import { toast } from '@/toast';
 import { type BreadcrumbItem } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import FullCalendar from '@fullcalendar/vue3';
@@ -20,6 +21,8 @@ interface Post {
   status: string;
   client_id: number;
   created_at: string;
+  scheduleDate?: string;
+  media?: string | string[] | null;
   client?: {
     id: number;
     name: string;
@@ -62,25 +65,66 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-const pendingApprovals = [
-  {
-    title: 'Summer Campaign Launch',
-    description: 'Exciting summer collection is here! 🌟 Check out our latest designs.',
-    scheduled: '1/20/2024, 10:00:00 AM',
-    platform: 'Instagram',
-  },
-  {
-    title: 'Product Showcase',
-    description: 'Introducing our newest product line. What do you think?',
-    scheduled: '1/22/2024, 2:00:00 PM',
-    platform: 'Facebook',
-  },
-]
+function formatDateTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
 
 const showPreview = ref(false)
+const selectedPost = ref<Post | null>(null)
 const showFeedback = ref(false)
 const feedbackType = ref<'comment' | 'reject'>('comment')
 const feedbackText = ref('')
+const actingPostId = ref<number | null>(null)
+
+async function approvePost(postId: number) {
+  await router.post(`/client/posts/${postId}/approve`, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Post approved')
+      router.reload({ only: ['stats', 'pendingPosts'] })
+    }
+  })
+}
+
+function openComment(postId: number) {
+  actingPostId.value = postId
+  feedbackType.value = 'comment'
+  feedbackText.value = ''
+  showFeedback.value = true
+}
+
+function openReject(postId: number) {
+  actingPostId.value = postId
+  feedbackType.value = 'reject'
+  feedbackText.value = ''
+  showFeedback.value = true
+}
+
+async function submitFeedback() {
+  if (!actingPostId.value) return
+  if (feedbackType.value === 'comment') {
+    await router.post(`/client/posts/${actingPostId.value}/comment`, { comment: feedbackText.value }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Comment added')
+        router.reload({ only: ['stats', 'pendingPosts'] })
+      }
+    })
+  } else {
+    await router.post(`/client/posts/${actingPostId.value}/reject`, { feedback: feedbackText.value }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Post rejected with feedback')
+        router.reload({ only: ['stats', 'pendingPosts'] })
+      }
+    })
+  }
+  showFeedback.value = false
+}
 
 const calendarEvents = ref([
   {
@@ -150,33 +194,33 @@ const calendarOptions = ref({
         </div>
         
         <div class="space-y-4">
-          <div v-for="(item, index) in 3" :key="index" class="bg-white border border-gray-200 rounded-xl p-5">
+          <div v-for="post in filteredPosts" :key="post.id" class="bg-white border border-gray-200 rounded-xl p-5">
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <h3 class="font-semibold text-gray-900 truncate">Check out our latest product launch! 🚀</h3>
-                  <span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">Post</span>
+                  <h3 class="font-semibold text-gray-900 truncate">{{ post.title }}</h3>
+                  <span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">{{ post.postType || 'Post' }}</span>
                 </div>
-                <div class="text-sm text-gray-500 mb-3">Scheduled for Dec 15, 2024 at 10:00 AM</div>
-                <p class="text-gray-700 mb-4">Check out our latest product launch! 🚀 #newproduct #innovation</p>
+                <div class="text-sm text-gray-500 mb-3">Created {{ formatDateTime(post.created_at) }}</div>
+                <p class="text-gray-700 mb-4">{{ post.content }}</p>
                 
                 <div class="flex flex-wrap items-center gap-2">
-                  <button class="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-green-100">
+                  <button class="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-green-100" @click="approvePost(post.id)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     Approve
                   </button>
-                  <button class="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-red-100" @click="feedbackType = 'reject'; showFeedback = true">
+                  <button class="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 border border-red-100" @click="openReject(post.id)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     Reject
                   </button>
-                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="feedbackType = 'comment'; showFeedback = true">
+                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="openComment(post.id)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                     Comment
                   </button>
-                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="showPreview = true">
+                  <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 bg-white text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 hover:bg-blue-50" @click="selectedPost = post; showPreview = true">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     Preview
                   </button>
@@ -204,20 +248,21 @@ const calendarOptions = ref({
             <DialogClose />
           </DialogHeader>
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">instagram, facebook</span>
-              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">Post</span>
+            <div class="flex items-center gap-2 mb-2" v-if="selectedPost">
+              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ selectedPost.platform }}</span>
+              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ selectedPost.postType }}</span>
             </div>
             <img
-              src="https://wallpapers.com/images/high/4k-tech-adejl7ukwd91go3b.webp"
+              v-if="selectedPost && selectedPost.media"
+              :src="typeof selectedPost.media === 'string' ? selectedPost.media : (Array.isArray(selectedPost.media) && selectedPost.media.length ? selectedPost.media[0] : '')"
               alt="Post preview"
               class="rounded-xl w-full object-cover mb-2"
               style="max-height: 300px;"
             />
-            <div class="mb-2">Check out our latest product launch!🚀 #newproduct #innovation</div>
-            <div class="text-gray-700 text-sm">
-              <span class="font-semibold">Scheduled:</span> 12/15/2024, 10:00:00 AM<br>
-              <span class="font-semibold">Platforms:</span> instagram, facebook
+            <div class="mb-2" v-if="selectedPost">{{ selectedPost.content }}</div>
+            <div class="text-gray-700 text-sm" v-if="selectedPost">
+              <span class="font-semibold">Scheduled:</span> {{ formatDateTime((selectedPost as any).scheduleDate ?? selectedPost.created_at) }}<br>
+              <span class="font-semibold">Platforms:</span> {{ selectedPost.platform }}
             </div>
           </div>
         </DialogContent>
@@ -228,7 +273,7 @@ const calendarOptions = ref({
         v-model:open="showFeedback"
         v-model:feedbackText="feedbackText"
         :feedbackType="feedbackType"
-        @submit="showFeedback = false"
+        @submit="submitFeedback"
         @cancel="showFeedback = false"
       />
     </div>

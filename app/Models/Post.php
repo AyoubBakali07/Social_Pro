@@ -20,6 +20,7 @@ class Post extends Model
         'postType',
         'status',
         'feedback',
+        'comment',
     ];
 
     protected $casts = [

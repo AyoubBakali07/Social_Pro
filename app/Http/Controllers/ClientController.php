@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Post;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -59,7 +60,7 @@ class ClientController extends Controller
             ->where('status', 'pending')
             ->with('client')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'title', 'content', 'platform', 'postType', 'status', 'client_id', 'created_at']);
+            ->get(['id', 'title', 'content', 'platform', 'postType', 'status', 'client_id', 'created_at', 'feedback', 'comment']);
 
         return Inertia::render('Client/Dashboard', [
             'stats' => [
@@ -90,5 +91,46 @@ class ClientController extends Controller
             ],
             'pendingPosts' => $pendingPosts
         ]);
+    }
+
+    public function approve(Post $post)
+    {
+        $client = Auth::user()->client;
+        if (!$client || $post->client_id !== $client->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $post->update(['status' => 'approved']);
+        return redirect()->back()->with('success', 'Post approved');
+    }
+
+    public function addComment(Request $request, Post $post)
+    {
+        $client = Auth::user()->client;
+        if (!$client || $post->client_id !== $client->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'comment' => 'required|string|max:2000',
+        ]);
+
+        $post->update(['comment' => $validated['comment']]);
+        return redirect()->back()->with('success', 'Comment added');
+    }
+
+    public function reject(Request $request, Post $post)
+    {
+        $client = Auth::user()->client;
+        if (!$client || $post->client_id !== $client->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+        ]);
+
+        $post->update(['status' => 'rejected', 'feedback' => $validated['feedback']]);
+        return redirect()->back()->with('success', 'Post rejected with feedback');
     }
 } 
