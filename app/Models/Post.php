@@ -12,6 +12,7 @@ class Post extends Model
     protected $fillable = [
         'agency_id',
         'client_id',
+        'title',
         'content',
         'media',
         'scheduleDate',

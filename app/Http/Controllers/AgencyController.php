@@ -124,6 +124,7 @@ class AgencyController extends Controller
 
                 return [
                     'id' => $post->id,
+                    'title' => $post->title,
                     'content' => $post->content,
                     'scheduleDate' => $post->scheduleDate->toIso8601String(),
                     'platform' => $post->platform,
@@ -232,7 +233,9 @@ class AgencyController extends Controller
 
     public function storePost(PostRequest $request)
     {
+        \Log::info('Store Post Request Data:', $request->all());
         $validated = $request->validated();
+        \Log::info('Validated Data:', $validated);
 
         $agency = $request->user()->agency;
         if (!$agency) {

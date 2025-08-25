@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agency_id')->constrained()->onDelete('cascade');
             $table->foreignId('client_id')->constrained()->onDelete('cascade');
+            $table->string('title');
             $table->text('content');
             $table->string('media')->nullable();
             $table->dateTime('scheduleDate');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->string('postType');
             $table->enum('status', ['pending', 'scheduled', 'published', 'approved', 'rejected']);
             $table->text('feedback')->nullable();
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }

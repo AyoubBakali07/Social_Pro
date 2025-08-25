@@ -74,6 +74,7 @@ const selectedEvent = ref<CalendarEventData | null>(null);
 
 const form = useForm({
   platform: 'Facebook',
+  title: '',
   content: '',
   scheduleDate: '',
   client_id: '',
@@ -87,11 +88,26 @@ const mediaError = ref('');
 
 const submitSchedule = async () => {
   mediaError.value = '';
+  // console.log('Form data before validation:', { ...form });
   if (!validateForm()) {
+    // console.log('Form validation failed');
     return;
   }
 
   const formData = new FormData();
+  // Log each field before appending
+  // console.log('Form fields before submission:', {
+  //   title: form.title,
+  //   content: form.content,
+  //   scheduleDate: form.scheduleDate,
+  //   platform: form.platform,
+  //   postType: form.postType,
+  //   client_id: form.client_id,
+  //   status: form.status,
+  //   feedback: form.feedback
+  // });
+  
+  formData.append('title', form.title);
   formData.append('content', form.content);
   formData.append('scheduleDate', form.scheduleDate);
   formData.append('platform', form.platform);
@@ -132,6 +148,10 @@ const submitSchedule = async () => {
 
 const validateForm = () => {
   const errors: Record<string, string> = {};
+
+  if (!form.title || typeof form.title !== 'string' || !form.title.trim()) {
+    errors.title = 'Title is required';
+  }
 
   if (!form.content || typeof form.content !== 'string' || !form.content.trim()) {
     errors.content = 'Content is required';
@@ -353,6 +373,7 @@ interface CalendarEventData {
   extendedProps: {
     platform: string;
     postType: string;
+    title: string;
     content: string;
     media: string[];
     client: string;
@@ -383,6 +404,7 @@ const formatCalendarEvents = (posts: any[]): EventInput[] => {
         extendedProps: {
           platform,
           postType: post.post_type || 'Post',
+          title: post.title || 'No title',
           content: post.content || '',
           media: Array.isArray(post.media) 
             ? post.media 
@@ -436,7 +458,7 @@ const handleEventClick = (info: any) => {
   const event = info.event;
   selectedEvent.value = {
     id: event.id,
-    title: event.title,
+    title: event.extendedProps.title,
     start: event.start,
     end: event.end,
     allDay: event.allDay,
@@ -446,6 +468,7 @@ const handleEventClick = (info: any) => {
       ...event.extendedProps,
       platform: event.extendedProps?.platform || 'Unknown',
       postType: event.extendedProps?.postType || 'Post',
+      title: event.extendedProps?.title || event.title || 'No title',
       content: event.extendedProps?.content || '',
       media: Array.isArray(event.extendedProps?.media) 
         ? event.extendedProps.media 
@@ -790,6 +813,11 @@ const getPlatformIcon = (platform: string) => {
               </button>
             </div>
             <div v-if="form.errors.postType" class="text-xs text-red-500 mt-1">{{ form.errors.postType }}</div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Title</label>
+            <input v-model="form.title" type="text" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            <div v-if="form.errors.title" class="text-xs text-red-500 mt-1">{{ form.errors.title }}</div> 
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Content</label>
