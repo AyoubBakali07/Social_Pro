@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { toast } from '@/toast';
+import { useToast, POSITION } from 'vue-toastification';
 import { type BreadcrumbItem } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import FullCalendar from '@fullcalendar/vue3';
@@ -80,12 +80,13 @@ const showFeedback = ref(false)
 const feedbackType = ref<'comment' | 'reject'>('comment')
 const feedbackText = ref('')
 const actingPostId = ref<number | null>(null)
+const t = useToast()
 
 async function approvePost(postId: number) {
   await router.post(`/client/posts/${postId}/approve`, {}, {
     preserveScroll: true,
     onSuccess: () => {
-      toast.success('Post approved')
+      t.success('Post approved', { position: POSITION.TOP_CENTER })
       router.reload({ only: ['stats', 'pendingPosts'] })
     }
   })
@@ -111,7 +112,7 @@ async function submitFeedback() {
     await router.post(`/client/posts/${actingPostId.value}/comment`, { comment: feedbackText.value }, {
       preserveScroll: true,
       onSuccess: () => {
-        toast.success('Comment added')
+        t.success('Comment added', { position: POSITION.TOP_CENTER })
         router.reload({ only: ['stats', 'pendingPosts'] })
       }
     })
@@ -119,7 +120,7 @@ async function submitFeedback() {
     await router.post(`/client/posts/${actingPostId.value}/reject`, { feedback: feedbackText.value }, {
       preserveScroll: true,
       onSuccess: () => {
-        toast.success('Post rejected with feedback')
+        t.success('Post rejected with feedback', { position: POSITION.TOP_CENTER })
         router.reload({ only: ['stats', 'pendingPosts'] })
       }
     })
@@ -130,10 +131,10 @@ async function submitFeedback() {
 // Toastify server flash messages (success/error)
 const page = usePage();
 watch(() => (page.props as any).flash?.success, (message) => {
-  if (message) toast.success(message)
+  if (message) t.success(message, { position: POSITION.TOP_CENTER })
 }, { immediate: true });
 watch(() => (page.props as any).flash?.error, (message) => {
-  if (message) toast.error(message)
+  if (message) t.error(message, { position: POSITION.TOP_CENTER })
 }, { immediate: true });
 
 const calendarEvents = ref<any[]>([]);
