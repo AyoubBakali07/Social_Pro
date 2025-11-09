@@ -241,17 +241,20 @@ const calendarOptions = reactive({
 <template>
   <AppLayout>
     <Head title="Calendar" />
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden sm:rounded-lg p-6">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-6">Content Calendar</h2>
+    <div class="py-8 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto w-full">
+        <div class="bg-white overflow-hidden sm:rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Content Calendar</h2>
+            <p class="text-sm text-gray-500">Track all of your scheduled posts in one responsive view.</p>
+          </div>
           
           <div v-if="calendarError" class="bg-red-50 text-red-700 p-4 rounded mb-4">
             {{ calendarError }}
           </div>
           
-          <div class="w-full bg-white border border-gray-200 rounded-xl p-4">
-            <div v-if="!calendarError" class="calendar-container">
+          <div class="w-full bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+            <div v-if="!calendarError" class="calendar-container overflow-x-auto">
               <FullCalendar 
                 ref="calendar"
                 :options="{
@@ -342,6 +345,33 @@ const calendarOptions = reactive({
     margin: 0.5rem 0;
   }
 }
+
+@media (max-width: 640px) {
+  .calendar-container {
+    min-height: 420px;
+  }
+
+  .fc .fc-toolbar-chunk {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+  }
+
+  .fc .fc-button-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .fc .fc-button {
+    flex: 1 1 calc(33.333% - 0.5rem);
+  }
+}
 </style>
 
 <style scoped>
@@ -356,7 +386,7 @@ const calendarOptions = reactive({
 .fc .fc-button, .fc .fc-button-primary {
   background-color: #fff !important;
   color: #2563eb !important; /* blue-600 */
-  border: 1px solidrgb(40, 42, 45) !important; /* blue-600 */
+  border: 1px solid rgb(37, 99, 235) !important; /* blue-600 */
   border-radius: 0.5rem !important; /* rounded-lg */
   font-weight: 500;
   font-size: 1rem;
