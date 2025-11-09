@@ -18,7 +18,7 @@ interface Post {
   platform?: string;
   postType?: string;
   created_at?: string;
-  media?: string[];
+  media?: string[] | string | null;
 }
 
 
@@ -81,6 +81,106 @@ onMounted(() => {
   console.log('Computed events:', events.value);
 });
 
+const platformIconSvgs = {
+  Facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-600" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3.28l.72-4H14V7a1 1 0 0 1 1-1h3z"/></svg>`,
+  Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-pink-600" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
+  Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-sky-500" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.5 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03A12.94 12.94 0 0 1 3 1.13a4.48 4.48 0 0 0-.61 2.27c0 1.56.8 2.94 2.02 3.75A4.48 4.48 0 0 1 2 6.13v.06c0 2.18 1.55 4 3.8 4.42a4.52 4.52 0 0 1-2.04.08c.57 1.78 2.23 3.08 4.2 3.12A9.05 9.05 0 0 1 1 19.54a12.8 12.8 0 0 0 6.95 2.04c8.36 0 12.94-6.93 12.94-12.94 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 23 3z"/></svg>`,
+  TikTok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-black" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>`,
+  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+};
+
+const platformPillColors: Record<string, string> = {
+  Facebook: 'bg-blue-100 text-blue-600',
+  Instagram: 'bg-pink-100 text-pink-600',
+  Twitter: 'bg-gray-100 text-gray-800',
+  TikTok: 'bg-cyan-500 text-white',
+  LinkedIn: 'bg-blue-50 text-blue-800',
+};
+
+function getPlatformColor(platform: string) {
+  const map: Record<string, string> = {
+    Facebook: '#3b82f6',
+    Instagram: '#ec4899',
+    Twitter: '#111827',
+    TikTok: '#06b6d4',
+    LinkedIn: '#1e40af',
+  };
+  return map[platform] || '#64748b';
+}
+
+function normalizeMedia(media?: Post['media']): string[] {
+  if (!media) return [];
+  if (Array.isArray(media)) {
+    return media.filter(Boolean) as string[];
+  }
+  return typeof media === 'string' && media.length ? [media] : [];
+}
+
+function formatCalendarEvents(postList: Post[]): EventInput[] {
+  if (!Array.isArray(postList)) return [];
+
+  return postList
+    .filter((post): post is Post => !!post && typeof post === 'object')
+    .map((post) => {
+      const color = getPlatformColor(post.platform || '');
+      const media = normalizeMedia(post.media);
+      const startDate = post.scheduleDate || post.created_at || new Date().toISOString();
+
+      return {
+        id: String(post.id),
+        title: post.title || (post.content ? post.content.substring(0, 40) : 'Scheduled Post'),
+        start: startDate,
+        allDay: true,
+        backgroundColor: color,
+        borderColor: color,
+        extendedProps: {
+          ...post,
+          media,
+          scheduleDate: startDate,
+          postType: post.postType || 'Post',
+          platform: post.platform || 'Platform',
+        },
+      };
+    });
+}
+
+function renderEventContent(arg: any) {
+  if (!arg?.event) return null;
+  const eventPlatform = arg.event.extendedProps?.platform || '';
+  const platformIconSvg = platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] || '';
+  const pillColor = platformPillColors[eventPlatform] || 'bg-gray-100 text-gray-800';
+  const label = arg.event.extendedProps?.postType || arg.event.title || 'Post';
+  const mediaList: string[] = arg.event.extendedProps?.media || [];
+
+  let mediaHtml = '';
+  if (mediaList.length > 0) {
+    const mediaUrl = mediaList[0];
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(mediaUrl);
+    const isVideo = /\.(mp4|mov|webm)$/i.test(mediaUrl);
+    if (isImage) {
+      mediaHtml = `<img src="${mediaUrl}" class="w-full h-24 object-cover rounded-lg border mb-1" alt="Post preview" />`;
+    } else if (isVideo) {
+      mediaHtml = `<video src="${mediaUrl}" class="w-full h-24 object-cover rounded-lg border mb-1" muted></video>`;
+    }
+  }
+
+  const contentHtml = mediaHtml
+    ? ''
+    : `<p class="text-xs text-gray-700 leading-tight truncate">${arg.event.extendedProps?.content || ''}</p>`;
+
+  return {
+    html: `
+      <div class="fc-event-card rounded-xl border border-gray-200 p-2 bg-white shadow-sm flex flex-col gap-1 cursor-pointer">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${pillColor}">
+          ${platformIconSvg}
+          <span>${label}</span>
+        </span>
+        ${mediaHtml || contentHtml}
+      </div>
+    `
+  };
+}
+
 const events = computed<EventInput[]>(() => {
   console.log('Recomputing events...');
   try {
@@ -88,61 +188,14 @@ const events = computed<EventInput[]>(() => {
       console.error('Posts is not an array:', posts.value);
       return [];
     }
-    
-    return posts.value
-      .filter((post): post is Post => !!post && typeof post === 'object')
-      .map(post => {
-        // Format the date for FullCalendar
-        let startDate = post.scheduleDate;
-        if (!startDate) {
-          console.warn('Post has no scheduleDate, using current date');
-          startDate = post.created_at ? new Date(post.created_at) : new Date();
-        }
-        
-        // Ensure startDate is a valid Date object
-        const eventDate = startDate instanceof Date ? 
-          startDate : 
-          (typeof startDate === 'string' ? new Date(startDate) : new Date());
-        
-        // Create the event object with proper typing
-        const event: EventInput = {
-          id: String(post.id),
-          title: post.content ? post.content.substring(0, 30) + (post.content.length > 30 ? '...' : '') : 'No content',
-          start: eventDate.toISOString(),
-          allDay: true,
-          backgroundColor: getStatusColor(post.status),
-          borderColor: getStatusColor(post.status),
-          extendedProps: {
-            ...post,
-            status: post.status || 'draft'
-          }
-        };
-        
-        console.log('Created event:', event);
-        return event;
-      });
+    const formatted = formatCalendarEvents(posts.value);
+    console.log('Formatted events:', formatted);
+    return formatted;
   } catch (error: unknown) {
     console.error('Error generating events:', error);
     return [];
   }
 });
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'draft':
-      return '#6b7280'; // Gray-500
-    case 'pending':
-      return '#3b82f6'; // Blue-500
-    case 'approved':
-      return '#22c55e'; // Green-500
-    case 'rejected':
-      return '#ef4444'; // Red-500
-    case 'scheduled':
-      return '#f97316'; // Orange-500
-    default:
-      return '#6b7280';
-  }
-};
 
 const calendarOptions = reactive({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
@@ -159,31 +212,15 @@ const calendarOptions = reactive({
   eventTimeFormat: {
     hour: '2-digit' as const,
     minute: '2-digit' as const,
-    meridiem: false, // Disable custom meridiem formatting
+    meridiem: false,
     hour12: true
   },
   eventClick: (info: any) => {
     const event = info.event;
     console.log('Event clicked:', event);
-    // You can add a modal or sidebar here to show event details
+    // Ready for future modal/preview
   },
-  eventContent: (arg: any) => {
-    const event = arg.event;
-    const status = event.extendedProps.status || 'draft';
-    const title = event.title || 'No title';
-    
-    // Create a custom HTML structure for the event
-    const eventEl = document.createElement('div');
-    eventEl.className = `fc-event-main ${status}`;
-    eventEl.innerHTML = `
-      <div class="flex items-center">
-        <span class="fc-event-dot" style="background-color: ${getStatusColor(status)}"></span>
-        <span class="fc-event-title">${title}</span>
-      </div>
-    `;
-    
-    return { domNodes: [eventEl] };
-  }
+  eventContent: renderEventContent
 });
 
 </script>
