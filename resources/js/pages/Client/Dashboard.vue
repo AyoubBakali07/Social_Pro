@@ -218,6 +218,10 @@ function renderEventContent(arg: EventContentArg) {
     }
   }
 
+  const contentHtml = mediaHtml
+    ? ''
+    : `<p class="text-xs text-gray-700 leading-tight truncate">${arg.event.extendedProps?.content || ''}</p>`;
+
   return {
     html: `
       <div class="fc-event-card rounded-xl border border-gray-200 p-2 bg-white shadow-sm flex flex-col gap-1 cursor-pointer">
@@ -225,8 +229,7 @@ function renderEventContent(arg: EventContentArg) {
           ${platformIconSvg}
           <span>${label}</span>
         </span>
-        ${mediaHtml}
-        <p class="text-xs text-gray-700 leading-tight">${arg.event.extendedProps?.content || ''}</p>
+        ${mediaHtml || contentHtml}
       </div>
     `
   };
