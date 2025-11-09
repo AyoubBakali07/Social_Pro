@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { useToast, POSITION } from 'vue-toastification';
 import { type BreadcrumbItem } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import FullCalendar from '@fullcalendar/vue3';
+import type { EventInput, EventClickArg, EventContentArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import rrulePlugin from '@fullcalendar/rrule';
@@ -135,26 +136,21 @@ watch(() => (page.props as any).flash?.error, (message) => {
   if (message) t.error(message, { position: POSITION.TOP_CENTER })
 }, { immediate: true });
 
-const calendarEvents = ref<any[]>([]);
-const calendarKey = ref(0);
-const events = computed(() => formatCalendarEvents(props.calendarPosts || []));
+const platformIconSvgs = {
+  Facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-600" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3.28l.72-4H14V7a1 1 0 0 1 1-1h3z"/></svg>`,
+  Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-pink-600" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
+  Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-sky-500" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.5 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03A12.94 12.94 0 0 1 3 1.13a4.48 4.48 0 0 0-.61 2.27c0 1.56.8 2.94 2.02 3.75A4.48 4.48 0 0 1 2 6.13v.06c0 2.18 1.55 4 3.8 4.42a4.52 4.52 0 0 1-2.04.08c.57 1.78 2.23 3.08 4.2 3.12A9.05 9.05 0 0 1 1 19.54a12.8 12.8 0 0 0 6.95 2.04c8.36 0 12.94-6.93 12.94-12.94 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 23 3z"/></svg>`,
+  TikTok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-black" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>`,
+  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+};
 
-const calendarOptions = ref({
-  plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
-  initialView: 'dayGridMonth',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-  },
-  events: calendarEvents.value,
-  dateClick: () => {
-    // Handle date click
-  },
-  eventClick: () => {
-    // Handle event click
-  }
-});
+const platformPillColors: Record<string, string> = {
+  Facebook: 'bg-blue-100 text-blue-600',
+  Instagram: 'bg-pink-100 text-pink-600',
+  Twitter: 'bg-gray-100 text-gray-800',
+  TikTok: 'bg-cyan-500 text-white',
+  LinkedIn: 'bg-blue-50 text-blue-800',
+};
 
 function getPlatformColor(platform: string) {
   const map: Record<string, string> = {
@@ -167,41 +163,109 @@ function getPlatformColor(platform: string) {
   return map[platform] || '#64748b';
 }
 
-function formatCalendarEvents(posts: any[]) {
-  if (!Array.isArray(posts)) return [];
-  return posts.map((post: any) => {
-    const color = getPlatformColor(post.platform || '');
-    return {
-      id: String(post.id),
-      title: post.content ? String(post.content).slice(0, 30) + (String(post.content).length > 30 ? '…' : '') : post.title || 'Post',
-      start: post.scheduleDate || post.created_at,
-      allDay: true,
-      backgroundColor: color,
-      borderColor: color,
-      extendedProps: { ...post }
-    };
-  });
+function normalizeMedia(media?: Post['media']): string[] {
+  if (!media) return [];
+  if (Array.isArray(media)) {
+    return media.filter(Boolean) as string[];
+  }
+  return media ? [media] : [];
 }
 
-// initialize calendar events from props and update when props change
-calendarEvents.value = formatCalendarEvents(props.calendarPosts || []);
-calendarOptions.value.events = [...calendarEvents.value];
-console.log('[ClientCalendar] props.calendarPosts count =', (props.calendarPosts || []).length);
-console.table((props.calendarPosts || []).map((p:any)=>({id:p.id, scheduleDate:p.scheduleDate, created_at:p.created_at, status:p.status})));
-console.log('[ClientCalendar] initial events =', calendarOptions.value.events?.length || 0);
-console.table((calendarOptions.value.events || []).map((e:any)=>({id:e.id, title:e.title, start:e.start})));
-nextTick(()=>{
-  console.log('[ClientCalendar] after mount, events in options:', (calendarOptions.value.events || []).length);
-});
-watch(() => props.calendarPosts, (posts) => {
-  calendarEvents.value = formatCalendarEvents(posts || [])
-  calendarOptions.value.events = [...calendarEvents.value]
-  calendarKey.value++
-  console.log('[ClientCalendar] props.calendarPosts updated. count =', (posts || []).length)
-  console.table((posts || []).map((p:any)=>({id:p.id, scheduleDate:p.scheduleDate, created_at:p.created_at, status:p.status})))
-  console.log('[ClientCalendar] events updated:', calendarOptions.value.events.length)
-  console.table((calendarOptions.value.events || []).map((e:any)=>({id:e.id, title:e.title, start:e.start})))
-}, { deep: true });
+function formatCalendarEvents(posts: any[]): EventInput[] {
+  if (!Array.isArray(posts)) return [];
+
+  return posts
+    .filter((post) => !!post)
+    .map((post) => {
+      const color = getPlatformColor(post.platform || '');
+      const media = normalizeMedia(post.media);
+      const startDate = post.scheduleDate || post.created_at;
+
+      return {
+        id: String(post.id),
+        title: post.title || (post.content ? String(post.content).slice(0, 40) : 'Scheduled Post'),
+        start: startDate,
+        allDay: true,
+        backgroundColor: color,
+        borderColor: color,
+        extendedProps: {
+          ...post,
+          media,
+          scheduleDate: startDate,
+          postType: post.postType || post.post_type || 'Post',
+        },
+      };
+    });
+}
+
+function renderEventContent(arg: EventContentArg) {
+  if (!arg?.event) return null;
+  const eventPlatform = arg.event.extendedProps?.platform || '';
+  const platformIconSvg = platformIconSvgs[eventPlatform as keyof typeof platformIconSvgs] || '';
+  const pillColor = platformPillColors[eventPlatform] || 'bg-gray-100 text-gray-800';
+  const label = arg.event.extendedProps?.postType || arg.event.title || 'Post';
+  const mediaList: string[] = arg.event.extendedProps?.media || [];
+
+  let mediaHtml = '';
+  if (mediaList.length > 0) {
+    const mediaUrl = mediaList[0];
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(mediaUrl);
+    const isVideo = /\.(mp4|mov|webm)$/i.test(mediaUrl);
+    if (isImage) {
+      mediaHtml = `<img src="${mediaUrl}" class="w-full h-24 object-cover rounded-lg border mb-1" alt="Post preview" />`;
+    } else if (isVideo) {
+      mediaHtml = `<video src="${mediaUrl}" class="w-full h-24 object-cover rounded-lg border mb-1" muted></video>`;
+    }
+  }
+
+  return {
+    html: `
+      <div class="fc-event-card rounded-xl border border-gray-200 p-2 bg-white shadow-sm flex flex-col gap-1 cursor-pointer">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${pillColor}">
+          ${platformIconSvg}
+          <span>${label}</span>
+        </span>
+        ${mediaHtml}
+        <p class="text-xs text-gray-700 leading-tight">${arg.event.extendedProps?.content || ''}</p>
+      </div>
+    `
+  };
+}
+
+function handleCalendarEventClick(info: EventClickArg) {
+  const event = info.event;
+  const extended = event.extendedProps || {};
+  const media = normalizeMedia(extended.media);
+
+  selectedPost.value = {
+    id: Number(event.id),
+    title: extended.title || event.title || 'Post',
+    content: extended.content || '',
+    platform: extended.platform || 'Platform',
+    postType: extended.postType || 'Post',
+    status: extended.status || 'scheduled',
+    client_id: extended.client_id || 0,
+    created_at: extended.created_at || (event.start ? event.start.toISOString() : new Date().toISOString()),
+    scheduleDate: extended.scheduleDate || (event.start ? event.start.toISOString() : undefined),
+    media,
+  };
+
+  showPreview.value = true;
+  info.jsEvent?.preventDefault();
+}
+
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
+  initialView: 'dayGridMonth',
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+  },
+  events: formatCalendarEvents(props.calendarPosts || []),
+  eventContent: renderEventContent,
+  eventClick: handleCalendarEventClick,
+}));
 </script>
 
 <template>
@@ -284,7 +348,7 @@ watch(() => props.calendarPosts, (posts) => {
       <div class="mt-3">
         <h2 class="text-2xl font-semibold mb-4">Upcoming Contents</h2>
         <div class="w-full  bg-white border border-gray-200 rounded-xl p-4 shadow mx-auto">
-          <FullCalendar :key="calendarKey" :options="{ ...calendarOptions, events }" />
+          <FullCalendar :options="calendarOptions" />
         </div>
       </div>
 
