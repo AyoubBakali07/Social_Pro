@@ -137,11 +137,11 @@ watch(() => (page.props as any).flash?.error, (message) => {
 }, { immediate: true });
 
 const platformIconSvgs = {
-  Facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-600" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3.28l.72-4H14V7a1 1 0 0 1 1-1h3z"/></svg>`,
-  Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-pink-600" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
-  Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-sky-500" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.5 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03A12.94 12.94 0 0 1 3 1.13a4.48 4.48 0 0 0-.61 2.27c0 1.56.8 2.94 2.02 3.75A4.48 4.48 0 0 1 2 6.13v.06c0 2.18 1.55 4 3.8 4.42a4.52 4.52 0 0 1-2.04.08c.57 1.78 2.23 3.08 4.2 3.12A9.05 9.05 0 0 1 1 19.54a12.8 12.8 0 0 0 6.95 2.04c8.36 0 12.94-6.93 12.94-12.94 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 23 3z"/></svg>`,
-  TikTok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-black" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>`,
-  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-blue-800" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="16" y1="8" x2="8" y2="16"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+  Facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-blue-600"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.988h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.462h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>`,
+  Instagram: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-pink-600"><path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7zm10 2a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zm5-3a1 1 0 100 2 1 1 0 000-2z"/></svg>`,
+  Twitter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-sky-500"><path d="M22.162 5.656a5.658 5.658 0 01-1.59.435 2.777 2.777 0 001.238-1.535 5.556 5.556 0 01-1.764.672 2.777 2.777 0 00-4.729 2.53 7.89 7.89 0 01-5.732-2.908 2.777 2.777 0 00.86 3.705 2.757 2.757 0 01-1.258-.347v.035a2.776 2.776 0 002.227 2.724 2.777 2.777 0 01-1.252.048 2.777 2.777 0 002.592 1.927A5.572 5.572 0 013 16.29a7.863 7.863 0 004.26 1.247c5.134 0 7.94-4.253 7.94-7.94 0-.121-.003-.242-.009-.362a5.664 5.664 0 001.39-1.448z"/></svg>`,
+  TikTok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-black"><path d="M21 8.5a6.5 6.5 0 01-4.5-1.84v7.1a6.22 6.22 0 11-5.4-6.16v3.39a2.9 2.9 0 102 2.74V2h3.1a3.4 3.4 0 003.3 3.12z"/></svg>`,
+  LinkedIn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-blue-700"><path d="M20.451 20.451h-3.554v-5.569c0-1.327-.027-3.036-1.849-3.036-1.851 0-2.134 1.445-2.134 2.939v5.666H9.358V9h3.414v1.561h.049c.476-.9 1.637-1.849 3.369-1.849 3.601 0 4.267 2.372 4.267 5.455v6.284zM5.337 7.433a2.062 2.062 0 110-4.124 2.062 2.062 0 010 4.124zm1.777 13.018H3.56V9h3.554v11.451zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.225.792 24 1.771 24h20.451c.98 0 1.772-.775 1.772-1.729V1.729C24 .774 23.207 0 22.225 0z"/></svg>`
 };
 
 const platformPillColors: Record<string, string> = {
@@ -257,6 +257,16 @@ function handleCalendarEventClick(info: EventClickArg) {
   info.jsEvent?.preventDefault();
 }
 
+function badgeClass(platform?: string) {
+  const map: Record<string, string> = {
+    Facebook: 'bg-blue-500/10 text-blue-600',
+    Instagram: 'bg-pink-500/10 text-pink-600',
+    Twitter: 'bg-sky-500/10 text-sky-600',
+    TikTok: 'bg-gray-900/10 text-gray-900',
+    LinkedIn: 'bg-blue-800/10 text-blue-800'
+  };
+  return map[platform || ''] || 'bg-gray-200 text-gray-700';
+}
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
   initialView: 'dayGridMonth',
@@ -357,27 +367,49 @@ const calendarOptions = computed(() => ({
 
       <!-- Post Preview Modal -->
       <Dialog v-model:open="showPreview">
-        <DialogContent class="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Post Preview</DialogTitle>
-            <DialogClose />
-          </DialogHeader>
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-2" v-if="selectedPost">
-              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ selectedPost.platform }}</span>
-              <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ selectedPost.postType }}</span>
+        <DialogContent class="max-w-2xl p-0 overflow-hidden">
+          <div class="flex justify-between items-start px-6 pt-5">
+            <div>
+              <p class="text-sm text-gray-500 uppercase tracking-wide mb-1">Post Preview</p>
+              <h3 class="text-2xl font-semibold text-gray-900" v-if="selectedPost">{{ selectedPost.title || 'Scheduled Post' }}</h3>
             </div>
-            <img
-              v-if="selectedPost && selectedPost.media"
-              :src="typeof selectedPost.media === 'string' ? selectedPost.media : (Array.isArray(selectedPost.media) && selectedPost.media.length ? selectedPost.media[0] : '')"
-              alt="Post preview"
-              class="rounded-xl w-full object-cover mb-2"
-              style="max-height: 300px;"
-            />
-            <div class="mb-2" v-if="selectedPost">{{ selectedPost.content }}</div>
-            <div class="text-gray-700 text-sm" v-if="selectedPost">
-              <span class="font-semibold">Scheduled:</span> {{ formatDateTime((selectedPost as any).scheduleDate ?? selectedPost.created_at) }}<br>
-              <span class="font-semibold">Platforms:</span> {{ selectedPost.platform }}
+            <DialogClose class="text-gray-400 hover:text-gray-600 transition-colors" />
+          </div>
+
+          <div v-if="selectedPost" class="px-6 pt-4 pb-6 space-y-6">
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold" :class="badgeClass(selectedPost.platform)">
+                <span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-white/20 text-white" v-html="platformIconSvgs[selectedPost.platform as keyof typeof platformIconSvgs] || ''"></span>
+                {{ selectedPost.platform }}
+              </span>
+              <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-3 py-1 text-xs font-semibold tracking-wide">{{ selectedPost.postType }}</span>
+            </div>
+
+            <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <img
+                v-if="selectedPost.media && selectedPost.media.length"
+                :src="typeof selectedPost.media === 'string' ? selectedPost.media : (Array.isArray(selectedPost.media) && selectedPost.media.length ? selectedPost.media[0] : '')"
+                alt="Post preview"
+                class="rounded-xl w-full object-cover shadow-sm"
+                style="max-height: 320px;"
+              />
+              <div v-else class="h-48 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium">
+                No media uploaded
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <p class="text-base text-gray-700 leading-relaxed">{{ selectedPost.content }}</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div class="rounded-xl border border-gray-100 p-4 bg-white shadow-sm">
+                  <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Scheduled</p>
+                  <p class="text-gray-900 font-semibold">{{ formatDateTime((selectedPost as any).scheduleDate ?? selectedPost.created_at) }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-100 p-4 bg-white shadow-sm">
+                  <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                  <p class="text-gray-900 font-semibold">{{ selectedPost.platform }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
