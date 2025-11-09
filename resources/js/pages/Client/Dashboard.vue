@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { useToast, POSITION } from 'vue-toastification';
@@ -55,9 +55,7 @@ const filteredPosts = computed(() => {
   );
 });
 
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
-}
+
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -138,6 +136,8 @@ watch(() => (page.props as any).flash?.error, (message) => {
 }, { immediate: true });
 
 const calendarEvents = ref<any[]>([]);
+const calendarKey = ref(0);
+const events = computed(() => formatCalendarEvents(props.calendarPosts || []));
 
 const calendarOptions = ref({
   plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
@@ -147,11 +147,11 @@ const calendarOptions = ref({
     center: 'title',
     right: 'dayGridMonth,timeGridWeek,timeGridDay'
   },
-  events: calendarEvents,
-  dateClick: (info: any) => {
+  events: calendarEvents.value,
+  dateClick: () => {
     // Handle date click
   },
-  eventClick: (info: any) => {
+  eventClick: () => {
     // Handle event click
   }
 });
@@ -174,7 +174,7 @@ function formatCalendarEvents(posts: any[]) {
     return {
       id: String(post.id),
       title: post.content ? String(post.content).slice(0, 30) + (String(post.content).length > 30 ? '…' : '') : post.title || 'Post',
-      start: post.scheduleDate || new Date().toISOString().slice(0,10),
+      start: post.scheduleDate || post.created_at,
       allDay: true,
       backgroundColor: color,
       borderColor: color,
@@ -185,8 +185,22 @@ function formatCalendarEvents(posts: any[]) {
 
 // initialize calendar events from props and update when props change
 calendarEvents.value = formatCalendarEvents(props.calendarPosts || []);
+calendarOptions.value.events = [...calendarEvents.value];
+console.log('[ClientCalendar] props.calendarPosts count =', (props.calendarPosts || []).length);
+console.table((props.calendarPosts || []).map((p:any)=>({id:p.id, scheduleDate:p.scheduleDate, created_at:p.created_at, status:p.status})));
+console.log('[ClientCalendar] initial events =', calendarOptions.value.events?.length || 0);
+console.table((calendarOptions.value.events || []).map((e:any)=>({id:e.id, title:e.title, start:e.start})));
+nextTick(()=>{
+  console.log('[ClientCalendar] after mount, events in options:', (calendarOptions.value.events || []).length);
+});
 watch(() => props.calendarPosts, (posts) => {
   calendarEvents.value = formatCalendarEvents(posts || [])
+  calendarOptions.value.events = [...calendarEvents.value]
+  calendarKey.value++
+  console.log('[ClientCalendar] props.calendarPosts updated. count =', (posts || []).length)
+  console.table((posts || []).map((p:any)=>({id:p.id, scheduleDate:p.scheduleDate, created_at:p.created_at, status:p.status})))
+  console.log('[ClientCalendar] events updated:', calendarOptions.value.events.length)
+  console.table((calendarOptions.value.events || []).map((e:any)=>({id:e.id, title:e.title, start:e.start})))
 }, { deep: true });
 </script>
 
@@ -270,7 +284,7 @@ watch(() => props.calendarPosts, (posts) => {
       <div class="mt-3">
         <h2 class="text-2xl font-semibold mb-4">Upcoming Contents</h2>
         <div class="w-full  bg-white border border-gray-200 rounded-xl p-4 shadow mx-auto">
-          <FullCalendar :options="calendarOptions" :events="calendarEvents" />
+          <FullCalendar :key="calendarKey" :options="{ ...calendarOptions, events }" />
         </div>
       </div>
 

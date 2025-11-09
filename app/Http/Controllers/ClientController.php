@@ -87,7 +87,6 @@ class ClientController extends Controller
             });
 
         $calendarPosts = Post::where('client_id', $client->id)
-            ->whereIn('status', ['pending', 'scheduled', 'approved', 'published'])
             ->with('client')
             ->orderBy('scheduleDate', 'asc')
             ->get()
@@ -183,5 +182,47 @@ class ClientController extends Controller
 
         $post->update(['status' => 'rejected', 'feedback' => $validated['feedback']]);
         return redirect()->back()->with('success', 'Post rejected with feedback');
+    }
+
+    /**
+     * Get posts for the calendar view
+     */
+    public function calendar()
+    {
+        $user = Auth::user();
+        $client = Client::where('user_id', $user->id)->first();
+        
+        if (!$client) {
+            abort(403, 'No client found for this user.');
+        }
+
+        $posts = Post::where('client_id', $client->id)
+            ->with('client')
+            ->orderBy('scheduleDate', 'asc')
+            ->get()
+            ->map(function ($post) {
+                $mediaUrls = collect($post->media)
+                    ->filter()
+                    ->map(function ($path) {
+                        $fixedPath = str_replace('\\', '/', $path);
+                        return Storage::url($fixedPath);
+                    })->all();
+
+                return [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'scheduleDate' => $post->scheduleDate ? $post->scheduleDate->toIso8601String() : null,
+                    'platform' => $post->platform,
+                    'postType' => $post->postType,
+                    'status' => $post->status,
+                    'media' => $mediaUrls,
+                    'created_at' => $post->created_at->toIso8601String(),
+                ];
+            });
+
+        return Inertia::render('Client/Calendar', [
+            'posts' => $posts
+        ]);
     }
 } 

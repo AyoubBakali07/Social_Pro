@@ -159,7 +159,7 @@
 
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import InputError from '@/components/InputError.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
@@ -235,7 +235,6 @@ const submit = () => {
 };
 
 // Auto-focus the password field on mount
-const passwordInput = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
   const input = document.getElementById('password');
