@@ -64,10 +64,10 @@ const posts = ref<Post[]>(Array.isArray(pageProps.posts) ? pageProps.posts : [])
 
 // Log the posts for debugging
 onMounted(() => {
+  if (!isDevelopment) return;
   console.log('Component mounted with posts:', posts.value);
   console.log('Number of posts:', posts.value.length);
   
-  // Log sample post data if available
   if (posts.value.length > 0) {
     console.log('Sample post:', {
       id: posts.value[0].id,
@@ -77,7 +77,6 @@ onMounted(() => {
     });
   }
   
-  // Log the computed events
   console.log('Computed events:', events.value);
 });
 
@@ -95,6 +94,20 @@ const platformPillColors: Record<string, string> = {
   Twitter: 'bg-gray-100 text-gray-800',
   TikTok: 'bg-cyan-500 text-white',
   LinkedIn: 'bg-blue-50 text-blue-800',
+};
+
+const escapeHtml = (value: unknown): string => {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[&<>"']/g, (char) => {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return map[char] || char;
+  });
 };
 
 function getPlatformColor(platform: string) {
@@ -164,9 +177,10 @@ function renderEventContent(arg: any) {
     }
   }
 
+  const safeContent = escapeHtml(arg.event.extendedProps?.content || '');
   const contentHtml = mediaHtml
     ? ''
-    : `<p class="text-xs text-gray-700 leading-tight truncate">${arg.event.extendedProps?.content || ''}</p>`;
+    : `<p class="text-xs text-gray-700 leading-tight truncate">${safeContent}</p>`;
 
   return {
     html: `
@@ -182,14 +196,14 @@ function renderEventContent(arg: any) {
 }
 
 const events = computed<EventInput[]>(() => {
-  console.log('Recomputing events...');
+  if (isDevelopment) console.log('Recomputing events...');
   try {
     if (!Array.isArray(posts.value)) {
       console.error('Posts is not an array:', posts.value);
       return [];
     }
     const formatted = formatCalendarEvents(posts.value);
-    console.log('Formatted events:', formatted);
+    if (isDevelopment) console.log('Formatted events:', formatted);
     return formatted;
   } catch (error: unknown) {
     console.error('Error generating events:', error);
@@ -217,8 +231,7 @@ const calendarOptions = reactive({
   },
   eventClick: (info: any) => {
     const event = info.event;
-    console.log('Event clicked:', event);
-    // Ready for future modal/preview
+    if (isDevelopment) console.log('Event clicked:', event);
   },
   eventContent: renderEventContent
 });
@@ -251,18 +264,17 @@ const calendarOptions = reactive({
                     right: 'dayGridMonth,dayGridWeek,dayGridDay'
                   },
                   eventDidMount: (info: any) => {
-                    console.log('Event mounted:', info.event);
+                    if (isDevelopment) console.log('Event mounted:', info.event);
                   },
                   eventClick: (info: any) => {
                     const event = info.event;
-                    console.log('Event clicked:', event);
-                    // You can add a modal or sidebar here to show event details
+                    if (isDevelopment) console.log('Event clicked:', event);
                   },
                   datesSet: (dateInfo: any) => {
-                    console.log('View changed:', dateInfo.view.type, dateInfo.view.title);
+                    if (isDevelopment) console.log('View changed:', dateInfo.view.type, dateInfo.view.title);
                   },
                   loading: (isLoading: boolean) => {
-                    console.log('Calendar loading:', isLoading);
+                    if (isDevelopment) console.log('Calendar loading:', isLoading);
                   }
                 }"
               />

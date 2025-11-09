@@ -86,7 +86,7 @@ async function approvePost(postId: number) {
     preserveScroll: true,
     onSuccess: () => {
       t.success('Post approved', { position: POSITION.TOP_CENTER })
-      router.reload({ only: ['stats', 'pendingPosts'] })
+      router.reload({ only: ['stats', 'pendingPosts', 'calendarPosts'] })
     }
   })
 }
@@ -112,7 +112,7 @@ async function submitFeedback() {
       preserveScroll: true,
       onSuccess: () => {
         t.success('Comment added', { position: POSITION.TOP_CENTER })
-        router.reload({ only: ['stats', 'pendingPosts'] })
+        router.reload({ only: ['stats', 'pendingPosts', 'calendarPosts'] })
       }
     })
   } else {
@@ -120,7 +120,7 @@ async function submitFeedback() {
       preserveScroll: true,
       onSuccess: () => {
         t.success('Post rejected with feedback', { position: POSITION.TOP_CENTER })
-        router.reload({ only: ['stats', 'pendingPosts'] })
+        router.reload({ only: ['stats', 'pendingPosts', 'calendarPosts'] })
       }
     })
   }
@@ -150,6 +150,20 @@ const platformPillColors: Record<string, string> = {
   Twitter: 'bg-gray-100 text-gray-800',
   TikTok: 'bg-cyan-500 text-white',
   LinkedIn: 'bg-blue-50 text-blue-800',
+};
+
+const escapeHtml = (value: unknown): string => {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[&<>"']/g, (char) => {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return map[char] || char;
+  });
 };
 
 function getPlatformColor(platform: string) {
@@ -218,9 +232,10 @@ function renderEventContent(arg: EventContentArg) {
     }
   }
 
+  const safeContent = escapeHtml(arg.event.extendedProps?.content || '');
   const contentHtml = mediaHtml
     ? ''
-    : `<p class="text-xs text-gray-700 leading-tight truncate">${arg.event.extendedProps?.content || ''}</p>`;
+    : `<p class="text-xs text-gray-700 leading-tight truncate">${safeContent}</p>`;
 
   return {
     html: `
