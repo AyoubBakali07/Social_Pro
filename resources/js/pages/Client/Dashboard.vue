@@ -263,7 +263,7 @@ const calendarOptions = computed(() => ({
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    right: 'dayGridMonth,dayGridWeek,dayGridDay'
   },
   events: formatCalendarEvents(props.calendarPosts || []),
   eventContent: renderEventContent,
@@ -394,3 +394,53 @@ const calendarOptions = computed(() => ({
     </div>
   </AppLayout>
 </template>
+
+<style>
+.fc {
+  width: 100%;
+}
+
+.fc .fc-button,
+.fc .fc-button-primary {
+  background-color: #fff !important;
+  color: #2563eb !important;
+  border: 1px solid #1d4ed8 !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500;
+  font-size: 1rem;
+  min-width: 44px;
+  min-height: 38px;
+  padding: 0.5rem 1.25rem;
+  box-shadow: none;
+  transition: background 0.18s, color 0.18s, border 0.18s, box-shadow 0.18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  outline: none;
+}
+
+.fc .fc-button:hover,
+.fc .fc-button-primary:hover {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+.fc .fc-button:focus,
+.fc .fc-button-primary:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px #bfdbfe !important;
+}
+
+.fc .fc-button-active,
+.fc .fc-button-primary.fc-button-active {
+  background-color: #2563eb !important;
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+
+.fc .fc-button-group {
+  gap: 0.5rem;
+}
+</style>
