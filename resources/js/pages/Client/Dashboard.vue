@@ -312,7 +312,7 @@ const calendarOptions = computed(() => ({
           <div v-for="post in filteredPosts" :key="post.id" class="bg-white border border-gray-200 rounded-xl p-5">
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                <span v-html="platformIconSvgs[post.platform as keyof typeof platformIconSvgs] || platformIconSvgs.Facebook"></span>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
