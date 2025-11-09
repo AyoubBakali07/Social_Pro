@@ -230,14 +230,14 @@ const calendarOptions = reactive({
     <Head title="Calendar" />
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+        <div class="bg-white overflow-hidden sm:rounded-lg p-6">
           <h2 class="text-2xl font-semibold text-gray-800 mb-6">Content Calendar</h2>
           
           <div v-if="calendarError" class="bg-red-50 text-red-700 p-4 rounded mb-4">
             {{ calendarError }}
           </div>
           
-          <div class="w-full bg-white border border-gray-200 rounded-xl p-4 shadow">
+          <div class="w-full bg-white border border-gray-200 rounded-xl p-4">
             <div v-if="!calendarError" class="calendar-container">
               <FullCalendar 
                 ref="calendar"
@@ -269,20 +269,6 @@ const calendarOptions = reactive({
             </div>
           </div>
           
-          <!-- Debug panel (visible in development) -->
-          <div v-if="isDevelopment" class="mt-8 p-4 bg-gray-100 rounded-lg w-full max-w-4xl">
-            <h3 class="font-bold mb-2">Debug Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 class="font-semibold mb-1">Posts Data ({{ posts.length }})</h4>
-                <pre class="bg-white p-3 rounded text-xs overflow-auto max-h-60">{{ JSON.stringify(posts, null, 2) }}</pre>
-              </div>
-              <div>
-                <h4 class="font-semibold mb-1">Events ({{ events.length }})</h4>
-                <pre class="bg-white p-3 rounded text-xs overflow-auto max-h-60">{{ JSON.stringify(events, null, 2) }}</pre>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
