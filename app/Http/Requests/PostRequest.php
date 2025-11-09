@@ -15,6 +15,7 @@ class PostRequest extends FormRequest
     {
         return [
             'client_id' => 'required|exists:clients,id',
+            'title' => 'required|string|max:255',
             'content' => 'required|string',
             'media' => 'nullable|array',
             'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,mov|max:20480', // 20MB

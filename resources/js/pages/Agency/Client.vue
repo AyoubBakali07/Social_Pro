@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, h } from 'vue'
-import { router, useForm, Head } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { useForm, Head } from '@inertiajs/vue3'
 
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useToast, POSITION } from 'vue-toastification'
@@ -18,16 +18,6 @@ import GenericTable from '@/components/ui/GenericTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 // Types
-interface Client {
-  id: number;
-  name: string;
-  email: string;
-  status: string;
-  pendingPosts?: number;
-  joined?: string;
-  company_name?: string;
-  [key: string]: any;
-}
 
 // State
 const search = ref('')
@@ -334,7 +324,7 @@ async function submitAddClient() {
     };
     
     await form.post(route('agency.clients.store'), options);
-  } catch (error) {
+  } catch {
     loading.value = false;
     toast.error('An unexpected error occurred. Please try again.', {
       position: POSITION.TOP_RIGHT,

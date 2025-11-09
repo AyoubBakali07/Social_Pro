@@ -12,6 +12,7 @@ class Post extends Model
     protected $fillable = [
         'agency_id',
         'client_id',
+        'title',
         'content',
         'media',
         'scheduleDate',
@@ -19,6 +20,7 @@ class Post extends Model
         'postType',
         'status',
         'feedback',
+        'comment',
     ];
 
     protected $casts = [

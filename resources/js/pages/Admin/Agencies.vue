@@ -97,7 +97,7 @@ async function submitAddAgency() {
       },
       onFinish: () => { loadingAdd.value = false }
     })
-  } catch (e) {
+  } catch {
     loadingAdd.value = false
     toast.error('An unexpected error occurred. Please try again.', { position: POSITION.TOP_RIGHT })
   }

@@ -17,6 +17,7 @@ class PostSeeder extends Seeder
                     'agency_id' => $client->agency_id,
                     'client_id' => $client->id,
                     'content' => fake()->sentence(10),
+                    'title' => fake()->sentence(5),
                     'media' => null,
                     'scheduleDate' => now()->addDays(rand(1, 30)),
                     'platform' => fake()->randomElement(['facebook', 'twitter', 'instagram']),

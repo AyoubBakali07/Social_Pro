@@ -8,6 +8,20 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+
+    if (!$user) {
+        return redirect()->route('login');
+    }
+
+    return match ($user->role) {
+        'admin' => redirect()->route('admin.dashboard'),
+        'client' => redirect()->route('client.dashboard'),
+        default => redirect()->route('agency.dashboard'),
+    };
+})->middleware(['auth', 'verified'])->name('dashboard');
+
 Route::get('/agency/dashboard', [\App\Http\Controllers\AgencyController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('agency.dashboard');
 
 Route::get('/agency/client', [\App\Http\Controllers\AgencyController::class, 'clientStats'])->middleware(['auth', 'verified'])->name('agency.client');
@@ -22,9 +36,16 @@ Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'd
 
 Route::get('/client/dashboard', [\App\Http\Controllers\ClientController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('client.dashboard');
 
-Route::get('/client/calendar', function () {
-    return Inertia::render('Client/Calendar');
-})->middleware(['auth', 'verified'])->name('client.calendar');
+// Client post actions
+Route::middleware(['auth','verified'])->group(function() {
+    Route::post('/client/posts/{post}/approve', [\App\Http\Controllers\ClientController::class, 'approve'])->name('client.posts.approve');
+    Route::post('/client/posts/{post}/comment', [\App\Http\Controllers\ClientController::class, 'addComment'])->name('client.posts.comment');
+    Route::post('/client/posts/{post}/reject', [\App\Http\Controllers\ClientController::class, 'reject'])->name('client.posts.reject');
+});
+
+Route::get('/client/calendar', [\App\Http\Controllers\ClientController::class, 'calendar'])
+    ->middleware(['auth', 'verified'])
+    ->name('client.calendar');
 
 Route::get('/admin/agencies', [\App\Http\Controllers\AdminController::class, 'agencies'])->middleware(['auth', 'verified'])->name('admin.agencies');
 Route::post('/admin/agencies', [\App\Http\Controllers\AdminController::class, 'storeAgency'])->middleware(['auth', 'verified'])->name('admin.agencies.store');

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { watch, ref, reactive, computed, onMounted } from 'vue';
+import { watch, ref, reactive, computed } from 'vue';
 import { router, Head, useForm } from '@inertiajs/vue3';
 import type { EventInput, EventDropArg } from '@fullcalendar/core';
-import { X, Loader2, FileText, Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next';
+import {} from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import FullCalendar from '@fullcalendar/vue3';
@@ -18,7 +18,7 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 import StatCard from '@/components/ui/card/StatCard.vue';
-import ScheduledPostCard from '@/components/ui/ScheduledPostCard.vue';
+
 import Button from '@/components/ui/button/Button.vue';
 import { useToast, POSITION } from 'vue-toastification';
 const toast = useToast();
@@ -38,12 +38,6 @@ const props = withDefaults(defineProps<DashboardProps>(), {
 });
 
 // Platform Icons and Components
-const platformIconComponents = {
-  Facebook,
-  Instagram,
-  Twitter,
-  LinkedIn: Linkedin,
-};
 
 // Map platform names to SVG strings (for FullCalendar event cards)
 const platformIconSvgs = {
@@ -74,6 +68,7 @@ const selectedEvent = ref<CalendarEventData | null>(null);
 
 const form = useForm({
   platform: 'Facebook',
+  title: '',
   content: '',
   scheduleDate: '',
   client_id: '',
@@ -87,11 +82,26 @@ const mediaError = ref('');
 
 const submitSchedule = async () => {
   mediaError.value = '';
+  // console.log('Form data before validation:', { ...form });
   if (!validateForm()) {
+    // console.log('Form validation failed');
     return;
   }
 
   const formData = new FormData();
+  // Log each field before appending
+  // console.log('Form fields before submission:', {
+  //   title: form.title,
+  //   content: form.content,
+  //   scheduleDate: form.scheduleDate,
+  //   platform: form.platform,
+  //   postType: form.postType,
+  //   client_id: form.client_id,
+  //   status: form.status,
+  //   feedback: form.feedback
+  // });
+  
+  formData.append('title', form.title);
   formData.append('content', form.content);
   formData.append('scheduleDate', form.scheduleDate);
   formData.append('platform', form.platform);
@@ -132,6 +142,10 @@ const submitSchedule = async () => {
 
 const validateForm = () => {
   const errors: Record<string, string> = {};
+
+  if (!form.title || typeof form.title !== 'string' || !form.title.trim()) {
+    errors.title = 'Title is required';
+  }
 
   if (!form.content || typeof form.content !== 'string' || !form.content.trim()) {
     errors.content = 'Content is required';
@@ -282,16 +296,9 @@ function getPlatformColor(platform: string): string {
   return platformConfig[platform as keyof typeof platformConfig]?.shortName ;
 }
 
-function getEventTitle(platform: string, postType: string): string {
-  const config = platformConfig[platform as keyof typeof platformConfig];
-  const postIcon = postTypeIcons[postType as keyof typeof postTypeIcons];
-  return ` ${postIcon || '📝'} ${config?.shortName || platform} ${postType}`;
-}
 
-function getTextPreview(text: string, maxLength = 40) {
-  if (!text) return '';
-  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
-}
+
+
 
 // Add this function to handle post deletion
 const showDeleteConfirm = ref(false);
@@ -353,6 +360,7 @@ interface CalendarEventData {
   extendedProps: {
     platform: string;
     postType: string;
+    title: string;
     content: string;
     media: string[];
     client: string;
@@ -383,6 +391,7 @@ const formatCalendarEvents = (posts: any[]): EventInput[] => {
         extendedProps: {
           platform,
           postType: post.post_type || 'Post',
+          title: post.title || 'No title',
           content: post.content || '',
           media: Array.isArray(post.media) 
             ? post.media 
@@ -436,7 +445,7 @@ const handleEventClick = (info: any) => {
   const event = info.event;
   selectedEvent.value = {
     id: event.id,
-    title: event.title,
+    title: event.extendedProps.title,
     start: event.start,
     end: event.end,
     allDay: event.allDay,
@@ -446,6 +455,7 @@ const handleEventClick = (info: any) => {
       ...event.extendedProps,
       platform: event.extendedProps?.platform || 'Unknown',
       postType: event.extendedProps?.postType || 'Post',
+      title: event.extendedProps?.title || event.title || 'No title',
       content: event.extendedProps?.content || '',
       media: Array.isArray(event.extendedProps?.media) 
         ? event.extendedProps.media 
@@ -471,41 +481,16 @@ const calendarOptions = reactive({
   },
   eventContent: function(arg: any) {
     if (!arg?.event) return null;
-    const postType = arg.event.extendedProps?.postType?.toLowerCase() || '';
-    let icon = '';
-    let pillBg = '';
-    let pillText = '';
-    if (postType === 'story') {
-      icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="3" y="3" width="18" height="18" rx="5" stroke="#d97706"/><circle cx="12" cy="12" r="4" stroke="#d97706"/></svg>`;
-      pillBg = 'bg-yellow-100';
-      pillText = 'text-yellow-800';
-    } else if (postType === 'carousel') {
-      icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="7" y="7" width="10" height="10" rx="2" stroke="#ef4444"/><rect x="3" y="3" width="10" height="10" rx="2" stroke="#ef4444"/></svg>`;
-      pillBg = 'bg-red-100';
-      pillText = 'text-red-800';
-    } else if (postType === 'reel') {
-      icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="3" y="5" width="18" height="14" rx="3" stroke="#22c55e"/><polygon points="10,9 16,12 10,15" fill="#22c55e"/></svg>`;
-      pillBg = 'bg-green-100';
-      pillText = 'text-green-800';
-    } else if (postType === 'post') {
-      icon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-1"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#64748b"/><circle cx="12" cy="12" r="4" stroke="#64748b"/></svg>`;
-      pillBg = 'bg-gray-100';
-      pillText = 'text-gray-800';
-    } else {
-      icon = '';
-      pillBg = 'bg-gray-100';
-      pillText = 'text-gray-800';
-    }
-    let shortName = '';
     const eventPlatform = arg.event.extendedProps?.platform || '';
-    if (eventPlatform && platformConfig[eventPlatform as keyof typeof platformConfig]) {
-      shortName = platformConfig[eventPlatform as keyof typeof platformConfig].shortName;
-    }
-    let label = shortName && postType ? `${shortName.toUpperCase()} ${postType.charAt(0).toUpperCase() + postType.slice(1)}` : (postType || arg.event.title);
-    const client = arg.event.extendedProps?.client;
-    if (client) {
-      label += ` - ${client.slice(0, 5) +'...'}`;
-    }
+    const rawPostType = arg.event.extendedProps?.postType || arg.event.title || 'Post';
+    const formattedPostType = typeof rawPostType === 'string'
+      ? rawPostType.charAt(0).toUpperCase() + rawPostType.slice(1)
+      : 'Post';
+    const clientName = (arg.event.extendedProps?.client || '').trim();
+    const truncatedClient = clientName
+      ? clientName.slice(0, 3) + (clientName.length > 3 ? '...' : '')
+      : '';
+    const label = truncatedClient ? `${formattedPostType} - ${truncatedClient}` : formattedPostType;
     // Media preview
     const mediaList = arg.event.extendedProps?.media || [];
     let mediaHtml = '';
@@ -614,13 +599,7 @@ const calendarOptions = reactive({
   }
 });
 
-function getShortFileName(name: string, maxBase = 10) {
-  const dotIdx = name.lastIndexOf('.');
-  if (dotIdx === -1) return name.length > maxBase ? name.slice(0, maxBase) + '…' : name;
-  const base = name.slice(0, dotIdx);
-  const ext = name.slice(dotIdx);
-  return base.length > maxBase ? base.slice(0, maxBase) + '…' + ext : name;
-}
+
 
 const mediaCarouselIndex = ref(0);
 watch(showEventDetails, (open) => {
@@ -632,28 +611,9 @@ watch(showEventDetails, (open) => {
 // Add these computed properties in <script setup lang="ts">
 
 
-const postDetailsPill = computed(() => {
-  if (!selectedEvent.value) return { icon: null, label: '', color: '' };
-  const modalPlatform = selectedEvent.value.extendedProps?.platform;
-  const postType = selectedEvent.value.extendedProps?.postType;
-    const shortName = modalPlatform && platformConfig[modalPlatform as keyof typeof platformConfig]?.shortName ? platformConfig[modalPlatform as keyof typeof platformConfig].shortName : '';
-  const icon = modalPlatform && platformIconComponents[modalPlatform as keyof typeof platformIconComponents] ? platformIconComponents[modalPlatform as keyof typeof platformIconComponents] : null;
-  const color = modalPlatform && platformPillColors[modalPlatform as keyof typeof platformPillColors] ? platformPillColors[modalPlatform as keyof typeof platformPillColors] : 'bg-gray-100 text-gray-800';
-  return {
-    icon,
-    label: `${shortName} ${postType || ''}`.trim(),
-    color
-  };
-});
 
-const formattedSchedule = computed(() => {
-  if (!selectedEvent.value?.start) return '';
-  const date = new Date(selectedEvent.value.start);
-  return date.toLocaleString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: true
-  });
-});
+
+
 
 // Helper function to format dates
 const formatDate = (date: Date | string | null | undefined): string => {
@@ -669,20 +629,7 @@ const formatDate = (date: Date | string | null | undefined): string => {
   });
 };
 
-// Helper function to get platform icon
-const getPlatformIcon = (platform: string) => {
-  const icons: Record<string, any> = {
-    'facebook': 'Facebook',
-    'instagram': 'Instagram',
-    'twitter': 'Twitter',
-    'tiktok': 'Music2',
-    'linkedin': 'Linkedin',
-    'youtube': 'Youtube',
-    'pinterest': 'Pinterest'
-  };
-  
-  return icons[platform.toLowerCase()] || 'FileText';
-};
+
 </script>
 
 <template>
@@ -790,6 +737,11 @@ const getPlatformIcon = (platform: string) => {
               </button>
             </div>
             <div v-if="form.errors.postType" class="text-xs text-red-500 mt-1">{{ form.errors.postType }}</div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Title</label>
+            <input v-model="form.title" type="text" class="w-full rounded border p-2 bg-white text-black dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            <div v-if="form.errors.title" class="text-xs text-red-500 mt-1">{{ form.errors.title }}</div> 
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Content</label>
@@ -1103,6 +1055,20 @@ const getPlatformIcon = (platform: string) => {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure custom card stays inside day cell */
+.fc .fc-daygrid-event-harness,
+.fc .fc-daygrid-event,
+.fc .fc-daygrid-event .fc-event-main,
+.fc-event-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.fc-event-card {
+  overflow: hidden;
 }
 
 /* Dialog/Modal styles */
